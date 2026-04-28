@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
 import '../../mock_data/mock_restaurants.dart';
+import 'restaurant_detail_screen.dart';
 
 class RestaurantDiscoveryScreen extends StatelessWidget {
   const RestaurantDiscoveryScreen({super.key});
@@ -94,7 +95,18 @@ class _RestaurantCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) =>
+                RestaurantDetailScreen(restaurant: restaurant),
+          ),
+        );
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -181,6 +193,7 @@ class _RestaurantCard extends StatelessWidget {
           ),
         ],
       ),
+    ),
     );
   }
 }
