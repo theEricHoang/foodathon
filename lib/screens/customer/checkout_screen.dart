@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
 import '../../mock_data/mock_menu_items.dart';
+import 'order_status_screen.dart';
 
 class CheckoutScreen extends StatelessWidget {
   final Map<String, int> cart;
@@ -67,10 +68,15 @@ class CheckoutScreen extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Order confirmed!')),
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => OrderStatusScreen(
+                cart: cart,
+                menuItems: menuItems,
+              ),
+            ),
           );
-          Navigator.pop(context);
         },
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.onPrimary,
