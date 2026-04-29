@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
 import '../../mock_data/mock_restaurants.dart';
 import '../../mock_data/mock_menu_items.dart';
+import 'checkout_screen.dart';
 
 class RestaurantDetailScreen extends StatefulWidget {
   final MockRestaurant restaurant;
@@ -72,7 +73,19 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
       ),
       floatingActionButton: _totalItems > 0
           ? FloatingActionButton.extended(
-              onPressed: () {},
+              onPressed: () {
+                final menuItems =
+                    mockMenuItems[widget.restaurant.name] ?? [];
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CheckoutScreen(
+                      cart: Map<String, int>.from(_cart),
+                      menuItems: menuItems,
+                    ),
+                  ),
+                );
+              },
               backgroundColor: AppColors.primary,
               foregroundColor: AppColors.onPrimary,
               icon: const Icon(Icons.shopping_cart),
