@@ -3,8 +3,33 @@ import '../../mock_data/mock_orders.dart';
 import '../../models/order.dart';
 import '../../theme/app_colors.dart';
 
-class RestaurantDashboardScreen extends StatelessWidget {
+class RestaurantDashboardScreen extends StatefulWidget {
   const RestaurantDashboardScreen({super.key});
+
+  @override
+  State<RestaurantDashboardScreen> createState() =>
+      _RestaurantDashboardScreenState();
+}
+
+class _RestaurantDashboardScreenState extends State<RestaurantDashboardScreen> {
+  late List<OrderStatus> _orderStatuses;
+
+  @override
+  void initState() {
+    super.initState();
+    _orderStatuses =
+        mockRestaurantOrders.map((order) => order.status).toList();
+  }
+
+  void _advanceStatus(int index) {
+    setState(() {
+      _orderStatuses[index] = switch (_orderStatuses[index]) {
+        OrderStatus.sent => OrderStatus.confirmed,
+        OrderStatus.confirmed => OrderStatus.readyForPickup,
+        _ => _orderStatuses[index],
+      };
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -15,26 +40,45 @@ class RestaurantDashboardScreen extends StatelessWidget {
         itemCount: mockRestaurantOrders.length,
         itemBuilder: (context, index) {
           final order = mockRestaurantOrders[index];
-          return _OrderCard(order: order);
+          final status = _orderStatuses[index];
+          return _OrderCard(
+            order: order,
+            status: status,
+            onAction: _buttonLabel(status) != null
+                ? () => _advanceStatus(index)
+                : null,
+          );
         },
       ),
     );
   }
+
+  static String? _buttonLabel(OrderStatus status) => switch (status) {
+        OrderStatus.sent => 'Confirm',
+        OrderStatus.confirmed => 'Mark Ready',
+        _ => null,
+      };
 }
 
 class _OrderCard extends StatelessWidget {
   final MockOrder order;
+  final OrderStatus status;
+  final VoidCallback? onAction;
 
-  const _OrderCard({required this.order});
+  const _OrderCard({
+    required this.order,
+    required this.status,
+    required this.onAction,
+  });
 
-  Color get _statusBarColor => switch (order.status) {
+  Color get _statusBarColor => switch (status) {
         OrderStatus.sent => AppColors.error,
         OrderStatus.confirmed => Colors.amber,
         OrderStatus.readyForPickup => Colors.green,
         _ => AppColors.silver,
       };
 
-  String? get _buttonLabel => switch (order.status) {
+  String? get _buttonLabel => switch (status) {
         OrderStatus.sent => 'Confirm',
         OrderStatus.confirmed => 'Mark Ready',
         _ => null,
@@ -92,7 +136,7 @@ class _OrderCard extends StatelessWidget {
                     ),
                     if (_buttonLabel != null)
                       ElevatedButton(
-                        onPressed: () {},
+                        onPressed: onAction,
                         style: ElevatedButton.styleFrom(
                           minimumSize: const Size(120, 40),
                         ),
