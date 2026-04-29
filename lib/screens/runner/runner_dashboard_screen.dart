@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
 import '../../mock_data/mock_orders.dart';
+import 'active_run_screen.dart';
 
 class RunnerDashboardScreen extends StatefulWidget {
   const RunnerDashboardScreen({super.key});
@@ -19,11 +20,15 @@ class _RunnerDashboardScreenState extends State<RunnerDashboardScreen> {
   }
 
   void _acceptOrder(int index) {
+    final order = _availableOrders[index];
     setState(() {
       _availableOrders.removeAt(index);
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Order accepted!')),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ActiveRunScreen(order: order),
+      ),
     );
   }
 

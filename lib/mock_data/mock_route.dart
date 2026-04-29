@@ -12,3 +12,14 @@ const List<LatLng> mockRunnerRoute = [
   LatLng(37.7829, -122.4114),
   LatLng(37.7849, -122.4094),
 ];
+
+const LatLng mockRunnerStartLocation = LatLng(37.7699, -122.4244);
+
+const List<LatLng> mockRunnerToRestaurantRoute = [
+  LatLng(37.7699, -122.4244),
+  LatLng(37.7709, -122.4234),
+  LatLng(37.7719, -122.4224),
+  LatLng(37.7729, -122.4214),
+  LatLng(37.7739, -122.4204),
+  LatLng(37.7749, -122.4194),
+];
