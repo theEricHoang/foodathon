@@ -23,6 +23,7 @@ class AppTheme {
           foregroundColor: AppColors.white,
           centerTitle: true,
           elevation: 0,
+          scrolledUnderElevation: 0,
         ),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
