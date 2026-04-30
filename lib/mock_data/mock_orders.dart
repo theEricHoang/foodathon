@@ -36,6 +36,80 @@ class MockOrder {
   });
 }
 
+const String mockRestaurantName = 'Bella Napoli';
+
+const List<MockOrder> mockRestaurantOrders = [
+  MockOrder(
+    id: 'rest-order-1',
+    restaurantName: mockRestaurantName,
+    customerName: 'Alice Johnson',
+    items: [
+      MockOrderItem(name: 'Margherita Pizza', quantity: 1, price: 14.99),
+      MockOrderItem(name: 'Tiramisu', quantity: 2, price: 7.99),
+    ],
+    status: OrderStatus.sent,
+    distanceToRestaurant: 0.0,
+    distanceToCustomer: 2.5,
+    commission: 0.0,
+    total: 30.97,
+  ),
+  MockOrder(
+    id: 'rest-order-2',
+    restaurantName: mockRestaurantName,
+    customerName: 'Bob Smith',
+    items: [
+      MockOrderItem(name: 'Pepperoni Pizza', quantity: 1, price: 16.99),
+      MockOrderItem(name: 'Garlic Bread', quantity: 1, price: 5.99),
+    ],
+    status: OrderStatus.sent,
+    distanceToRestaurant: 0.0,
+    distanceToCustomer: 1.7,
+    commission: 0.0,
+    total: 22.98,
+  ),
+  MockOrder(
+    id: 'rest-order-3',
+    restaurantName: mockRestaurantName,
+    customerName: 'Carol Davis',
+    items: [
+      MockOrderItem(name: 'Lasagna', quantity: 1, price: 18.99),
+    ],
+    status: OrderStatus.confirmed,
+    distanceToRestaurant: 0.0,
+    distanceToCustomer: 3.0,
+    commission: 0.0,
+    total: 18.99,
+  ),
+  MockOrder(
+    id: 'rest-order-4',
+    restaurantName: mockRestaurantName,
+    customerName: 'Dan Wilson',
+    items: [
+      MockOrderItem(name: 'Caprese Salad', quantity: 1, price: 12.99),
+      MockOrderItem(name: 'Spaghetti Carbonara', quantity: 1, price: 15.99),
+      MockOrderItem(name: 'Tiramisu', quantity: 1, price: 7.99),
+    ],
+    status: OrderStatus.confirmed,
+    distanceToRestaurant: 0.0,
+    distanceToCustomer: 1.3,
+    commission: 0.0,
+    total: 36.97,
+  ),
+  MockOrder(
+    id: 'rest-order-5',
+    restaurantName: mockRestaurantName,
+    customerName: 'Eve Martinez',
+    items: [
+      MockOrderItem(name: 'Bruschetta', quantity: 2, price: 9.99),
+    ],
+    status: OrderStatus.readyForPickup,
+    distanceToRestaurant: 0.0,
+    distanceToCustomer: 2.2,
+    commission: 0.0,
+    total: 19.98,
+  ),
+];
+
 const List<MockOrder> mockOrders = [
   MockOrder(
     id: 'order-1',
