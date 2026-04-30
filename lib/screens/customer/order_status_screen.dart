@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
-import '../../mock_data/mock_menu_items.dart';
+import '../../models/menu_item.dart';
 import '../../mock_data/mock_route.dart';
 import '../../models/order.dart';
 import '../../theme/app_colors.dart';
@@ -11,7 +11,7 @@ import 'restaurant_discovery_screen.dart';
 
 class OrderStatusScreen extends StatefulWidget {
   final Map<String, int> cart;
-  final List<MockMenuItem> menuItems;
+  final List<MenuItem> menuItems;
 
   const OrderStatusScreen({
     super.key,
@@ -278,7 +278,7 @@ class _OrderStatusStepper extends StatelessWidget {
 
 class _OrderReceiptSection extends StatelessWidget {
   final Map<String, int> cart;
-  final List<MockMenuItem> menuItems;
+  final List<MenuItem> menuItems;
 
   const _OrderReceiptSection({
     required this.cart,

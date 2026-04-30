@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
 import '../../mock_data/mock_orders.dart';
+import '../../models/order.dart';
 import 'active_run_screen.dart';
 
 class RunnerDashboardScreen extends StatefulWidget {
@@ -11,7 +12,7 @@ class RunnerDashboardScreen extends StatefulWidget {
 }
 
 class _RunnerDashboardScreenState extends State<RunnerDashboardScreen> {
-  late List<MockOrder> _availableOrders;
+  late List<Order> _availableOrders;
 
   @override
   void initState() {
@@ -77,7 +78,7 @@ class _RunnerDashboardScreenState extends State<RunnerDashboardScreen> {
 }
 
 class _RunnerOrderCard extends StatelessWidget {
-  final MockOrder order;
+  final Order order;
   final VoidCallback onAccept;
 
   const _RunnerOrderCard({
@@ -110,7 +111,7 @@ class _RunnerOrderCard extends StatelessWidget {
                 const Icon(Icons.directions_walk, size: 18, color: AppColors.blueSlate),
                 const SizedBox(width: 6),
                 Text(
-                  '${order.distanceToRestaurant} mi to restaurant',
+                  '${order.distanceToRestaurant ?? 0} mi to restaurant',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: AppColors.blueSlate,
                       ),
@@ -123,7 +124,7 @@ class _RunnerOrderCard extends StatelessWidget {
                 const Icon(Icons.delivery_dining, size: 18, color: AppColors.blueSlate),
                 const SizedBox(width: 6),
                 Text(
-                  '${order.distanceToCustomer} mi to customer',
+                  '${order.distanceToCustomer ?? 0} mi to customer',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: AppColors.blueSlate,
                       ),
@@ -135,7 +136,7 @@ class _RunnerOrderCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  '\$${order.commission.toStringAsFixed(2)} commission',
+                  '\$${(order.commission ?? 0).toStringAsFixed(2)} commission',
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: AppColors.primary,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
 import '../../mock_data/mock_restaurants.dart';
+import '../../models/restaurant.dart';
 import 'restaurant_detail_screen.dart';
 
 class RestaurantDiscoveryScreen extends StatelessWidget {
@@ -89,7 +90,7 @@ class _FilterChipItem extends StatelessWidget {
 }
 
 class _RestaurantCard extends StatelessWidget {
-  final MockRestaurant restaurant;
+  final Restaurant restaurant;
 
   const _RestaurantCard({required this.restaurant});
 
