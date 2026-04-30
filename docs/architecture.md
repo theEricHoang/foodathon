@@ -17,7 +17,7 @@
 		restaurant.dart
 		menu_item.dart
 		order.dart
-		driver.dart
+		runner.dart
 
 	/services
 		auth_service.dart
@@ -30,14 +30,14 @@
 		user_repository.dart
 		restaurant_repository.dart
 		order_repository.dart
-		driver_repository.dart
+		runner_repository.dart
 
 	/providers
 		auth_provider.dart
 		user_provider.dart
 		restaurant_provider.dart
 		order_provider.dart
-		driver_provider.dart
+		runner_provider.dart
 
 	/screens
 		auth/
@@ -127,9 +127,9 @@
 
 ---
 
-## Driver State (Runner)
+## Runner State
 
-### driver_provider.dart
+### runner_provider.dart
 - holds:
 	- `bool isOnline`
 	- `Order? assignedOrder`
@@ -138,7 +138,7 @@
 - methods:
 	- `goOnline() / goOffline()`
 	- `updateLocation()`
-	- `listenToAssignments(driverId)`
+	- `listenToAssignments(runnerId)`
 	- `acceptOrder(orderId)`
 	- `rejectOrder(orderId)`
 	- `markPickedUp(orderId)`
@@ -158,7 +158,7 @@ Instead:
 - Cloud Function triggers on:
 	- order status → `ready`
 - function:
-	- queries available drivers
+	- queries available runners
 	- computes score
 	- writes assignment
 
