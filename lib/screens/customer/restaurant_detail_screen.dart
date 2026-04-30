@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
-import '../../mock_data/mock_restaurants.dart';
 import '../../mock_data/mock_menu_items.dart';
+import '../../models/menu_item.dart';
+import '../../models/restaurant.dart';
 import 'checkout_screen.dart';
 
 class RestaurantDetailScreen extends StatefulWidget {
-  final MockRestaurant restaurant;
+  final Restaurant restaurant;
 
   const RestaurantDetailScreen({super.key, required this.restaurant});
 
@@ -101,7 +102,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
 }
 
 class _RestaurantHeader extends StatelessWidget {
-  final MockRestaurant restaurant;
+  final Restaurant restaurant;
 
   const _RestaurantHeader({required this.restaurant});
 
@@ -191,7 +192,7 @@ class _RestaurantHeader extends StatelessWidget {
 }
 
 class _MenuItemTile extends StatelessWidget {
-  final MockMenuItem item;
+  final MenuItem item;
   final int quantity;
   final VoidCallback onAdd;
   final VoidCallback onRemove;

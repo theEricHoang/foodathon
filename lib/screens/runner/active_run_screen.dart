@@ -3,13 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
-import '../../mock_data/mock_orders.dart';
 import '../../mock_data/mock_route.dart';
 import '../../models/order.dart';
 import '../../theme/app_colors.dart';
 
 class ActiveRunScreen extends StatefulWidget {
-  final MockOrder order;
+  final Order order;
 
   const ActiveRunScreen({super.key, required this.order});
 
@@ -296,7 +295,7 @@ class _RunnerStatusStepper extends StatelessWidget {
 }
 
 class _OrderDetailSection extends StatelessWidget {
-  final MockOrder order;
+  final Order order;
 
   const _OrderDetailSection({required this.order});
 
@@ -318,7 +317,7 @@ class _OrderDetailSection extends StatelessWidget {
                     ),
               ),
               Text(
-                '\$${order.commission.toStringAsFixed(2)} commission',
+                '\$${(order.commission ?? 0).toStringAsFixed(2)} commission',
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: AppColors.primary,

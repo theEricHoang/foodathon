@@ -61,7 +61,7 @@ class _RestaurantDashboardScreenState extends State<RestaurantDashboardScreen> {
 }
 
 class _OrderCard extends StatelessWidget {
-  final MockOrder order;
+  final Order order;
   final OrderStatus status;
   final VoidCallback? onAction;
 

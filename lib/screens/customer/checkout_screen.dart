@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
-import '../../mock_data/mock_menu_items.dart';
+import '../../models/menu_item.dart';
 import 'order_status_screen.dart';
 
 class CheckoutScreen extends StatelessWidget {
   final Map<String, int> cart;
-  final List<MockMenuItem> menuItems;
+  final List<MenuItem> menuItems;
 
   const CheckoutScreen({
     super.key,
@@ -92,7 +92,7 @@ class CheckoutScreen extends StatelessWidget {
 }
 
 class _CheckoutItemTile extends StatelessWidget {
-  final MockMenuItem item;
+  final MenuItem item;
   final int quantity;
 
   const _CheckoutItemTile({

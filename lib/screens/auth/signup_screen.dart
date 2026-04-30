@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../models/user.dart';
 import '../../theme/app_colors.dart';
-
-enum UserRole { customer, runner, shopowner }
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
