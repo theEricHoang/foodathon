@@ -44,6 +44,9 @@ class Order {
   final OrderStatus status;
   final double total;
   final String? runnerId;
+  final double? distanceToRestaurant;
+  final double? distanceToCustomer;
+  final double? commission;
   final DateTime createdAt;
 
   const Order({
@@ -56,6 +59,9 @@ class Order {
     required this.status,
     required this.total,
     this.runnerId,
+    this.distanceToRestaurant,
+    this.distanceToCustomer,
+    this.commission,
     required this.createdAt,
   });
 

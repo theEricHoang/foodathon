@@ -18,6 +18,9 @@ Order _$OrderFromJson(Map<String, dynamic> json) => Order(
   status: $enumDecode(_$OrderStatusEnumMap, json['status']),
   total: (json['total'] as num).toDouble(),
   runnerId: json['runnerId'] as String?,
+  distanceToRestaurant: (json['distanceToRestaurant'] as num?)?.toDouble(),
+  distanceToCustomer: (json['distanceToCustomer'] as num?)?.toDouble(),
+  commission: (json['commission'] as num?)?.toDouble(),
   createdAt: DateTime.parse(json['createdAt'] as String),
 );
 
@@ -31,6 +34,9 @@ Map<String, dynamic> _$OrderToJson(Order instance) => <String, dynamic>{
   'status': _$OrderStatusEnumMap[instance.status]!,
   'total': instance.total,
   'runnerId': instance.runnerId,
+  'distanceToRestaurant': instance.distanceToRestaurant,
+  'distanceToCustomer': instance.distanceToCustomer,
+  'commission': instance.commission,
   'createdAt': instance.createdAt.toIso8601String(),
 };
 
