@@ -26,7 +26,6 @@
 		messaging_service.dart
 
 	/repositories
-		auth_repository.dart
 		user_repository.dart
 		restaurant_repository.dart
 		order_repository.dart
@@ -53,6 +52,14 @@
 - **Repositories** → shape data for app
 - **Providers** → hold state + expose to UI
 
+### Combined User Repository
+
+`user_repository.dart` merges auth and user profile responsibilities.
+Sign-up, sign-in, and sign-out are tightly coupled with user profile
+creation and retrieval — separating them would force cross-repository
+coordination for basic operations like sign-up (which must register
+in FirebaseAuth AND create a Firestore user doc).
+
 ---
 
 ## Auth Flow
@@ -68,6 +75,7 @@
 	- `logout()`
 
 - behavior:
+	- uses `UserRepository` for all auth + profile operations
 	- listens to Firebase Auth state changes
 	- triggers loading of user profile
 
@@ -82,7 +90,7 @@
 	- `fetchUser(uid)`
 	- `updateUser(...)`
 
-- used after auth to fetch Firestore user doc
+- uses `UserRepository` to fetch/update Firestore user docs
 
 ---
 
