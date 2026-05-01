@@ -14,7 +14,7 @@ class FirestoreService {
   }
 
   Future<void> setDocument(String collection, String docId, Map<String, dynamic> data) {
-    return _firestore.collection(collection).doc(docId).set(data, SetOptions(merge: true));
+    return _firestore.collection(collection).doc(docId).set(data);
   }
 
   Future<void> updateDocument(String collection, String docId, Map<String, dynamic> data) {
@@ -74,7 +74,7 @@ class FirestoreService {
   }
 
   Future<void> setSubcollectionDocument(String collection, String docId, String subcollection, String subDocId, Map<String, dynamic> data) {
-    return _firestore.collection(collection).doc(docId).collection(subcollection).doc(subDocId).set(data, SetOptions(merge: true));
+    return _firestore.collection(collection).doc(docId).collection(subcollection).doc(subDocId).set(data);
   }
 
   Future<List<Map<String, dynamic>>> getSubcollection(String collection, String docId, String subcollection) {
