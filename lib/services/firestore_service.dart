@@ -3,7 +3,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class FirestoreService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  Future<Map<String, dynamic>?> getDocument(String collection, String docId) async {
+  Future<Map<String, dynamic>?> getDocument(
+    String collection,
+    String docId,
+  ) async {
     final doc = await _firestore.collection(collection).doc(docId).get();
     if (doc.exists) {
       final data = doc.data()!;
@@ -13,11 +16,19 @@ class FirestoreService {
     return null;
   }
 
-  Future<void> setDocument(String collection, String docId, Map<String, dynamic> data) {
+  Future<void> setDocument(
+    String collection,
+    String docId,
+    Map<String, dynamic> data,
+  ) {
     return _firestore.collection(collection).doc(docId).set(data);
   }
 
-  Future<void> updateDocument(String collection, String docId, Map<String, dynamic> data) {
+  Future<void> updateDocument(
+    String collection,
+    String docId,
+    Map<String, dynamic> data,
+  ) {
     return _firestore.collection(collection).doc(docId).update(data);
   }
 
@@ -35,19 +46,31 @@ class FirestoreService {
     });
   }
 
-  Future<List<Map<String, dynamic>>> queryCollection(String collection, {required String field, required dynamic value})
-  {
-    return _firestore.collection(collection).where(field, isEqualTo: value).get().then((snapshot) {
-      return snapshot.docs.map((doc) {
-        final data = doc.data();
-        data['id'] = doc.id;
-        return data;
-      }).toList();
-    });
+  Future<List<Map<String, dynamic>>> queryCollection(
+    String collection, {
+    required String field,
+    required dynamic value,
+  }) {
+    return _firestore
+        .collection(collection)
+        .where(field, isEqualTo: value)
+        .get()
+        .then((snapshot) {
+          return snapshot.docs.map((doc) {
+            final data = doc.data();
+            data['id'] = doc.id;
+            return data;
+          }).toList();
+        });
   }
 
-  Stream<Map<String, dynamic>?> streamDocument(String collection, String docId) {
-    return _firestore.collection(collection).doc(docId).snapshots().map((snapshot) {
+  Stream<Map<String, dynamic>?> streamDocument(
+    String collection,
+    String docId,
+  ) {
+    return _firestore.collection(collection).doc(docId).snapshots().map((
+      snapshot,
+    ) {
       if (snapshot.exists) {
         final data = snapshot.data()!;
         data['id'] = snapshot.id;
@@ -57,7 +80,11 @@ class FirestoreService {
     });
   }
 
-  Stream<List<Map<String, dynamic>>> streamCollection(String collection, {String? field, dynamic value}) {
+  Stream<List<Map<String, dynamic>>> streamCollection(
+    String collection, {
+    String? field,
+    dynamic value,
+  }) {
     Query query = _firestore.collection(collection);
 
     if (field != null && value != null) {
@@ -73,17 +100,37 @@ class FirestoreService {
     });
   }
 
-  Future<void> setSubcollectionDocument(String collection, String docId, String subcollection, String subDocId, Map<String, dynamic> data) {
-    return _firestore.collection(collection).doc(docId).collection(subcollection).doc(subDocId).set(data);
+  Future<void> setSubcollectionDocument(
+    String collection,
+    String docId,
+    String subcollection,
+    String subDocId,
+    Map<String, dynamic> data,
+  ) {
+    return _firestore
+        .collection(collection)
+        .doc(docId)
+        .collection(subcollection)
+        .doc(subDocId)
+        .set(data);
   }
 
-  Future<List<Map<String, dynamic>>> getSubcollection(String collection, String docId, String subcollection) {
-    return _firestore.collection(collection).doc(docId).collection(subcollection).get().then((snapshot) {
-      return snapshot.docs.map((doc) {
-        final data = doc.data();
-        data['id'] = doc.id;
-        return data;
-      }).toList();
-    });
+  Future<List<Map<String, dynamic>>> getSubcollection(
+    String collection,
+    String docId,
+    String subcollection,
+  ) {
+    return _firestore
+        .collection(collection)
+        .doc(docId)
+        .collection(subcollection)
+        .get()
+        .then((snapshot) {
+          return snapshot.docs.map((doc) {
+            final data = doc.data();
+            data['id'] = doc.id;
+            return data;
+          }).toList();
+        });
   }
 }
