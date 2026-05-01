@@ -1,7 +1,7 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 
-class FCMService {
+class MessagingService {
   final FirebaseMessaging messaging = FirebaseMessaging.instance;
 
   Future<void> initialize({required void Function(RemoteMessage) onData}) async {
