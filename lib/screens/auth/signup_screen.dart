@@ -6,6 +6,7 @@ import '../../providers/runner_provider.dart';
 import '../../providers/user_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../utils/role_routing.dart';
+import '../shopowner/create_restaurant_screen.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -63,11 +64,13 @@ class _SignupScreenState extends State<SignupScreen> {
 
     if (!mounted) return;
 
+    final destination = _selectedRole == UserRole.shopowner
+        ? const CreateRestaurantScreen()
+        : homeScreenForRole(_selectedRole);
+
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(
-        builder: (_) => homeScreenForRole(_selectedRole),
-      ),
+      MaterialPageRoute(builder: (_) => destination),
       (_) => false,
     );
   }

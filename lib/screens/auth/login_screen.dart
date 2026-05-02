@@ -5,7 +5,9 @@ import '../../providers/auth_provider.dart';
 import '../../providers/runner_provider.dart';
 import '../../providers/user_provider.dart';
 import '../../theme/app_colors.dart';
+import '../../providers/restaurant_provider.dart';
 import '../../utils/role_routing.dart';
+import '../shopowner/create_restaurant_screen.dart';
 import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -54,15 +56,25 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (role == UserRole.runner) {
       await context.read<RunnerProvider>().fetchRunnerByUserId(user.id);
+    } else if (role == UserRole.shopowner) {
+      await context.read<RestaurantProvider>().fetchRestaurantByOwnerId(user.id);
     }
 
     if (!mounted) return;
 
+    Widget destination;
+    if (role == UserRole.shopowner) {
+      final restaurant = context.read<RestaurantProvider>().currentRestaurant;
+      destination = restaurant != null
+          ? homeScreenForRole(role)
+          : const CreateRestaurantScreen();
+    } else {
+      destination = homeScreenForRole(role);
+    }
+
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(
-        builder: (_) => homeScreenForRole(role),
-      ),
+      MaterialPageRoute(builder: (_) => destination),
       (_) => false,
     );
   }

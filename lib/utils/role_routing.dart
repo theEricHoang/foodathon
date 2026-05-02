@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../models/user.dart';
-import '../screens/auth/login_screen.dart';
 import '../screens/customer/restaurant_discovery_screen.dart';
 import '../screens/runner/runner_dashboard_screen.dart';
+import '../screens/shopowner/restaurant_dashboard_screen.dart';
 
 Widget homeScreenForRole(UserRole role) {
   switch (role) {
@@ -12,6 +12,6 @@ Widget homeScreenForRole(UserRole role) {
     case UserRole.runner:
       return const RunnerDashboardScreen();
     case UserRole.shopowner:
-      return const LoginScreen();
+      return const RestaurantDashboardScreen();
   }
 }
