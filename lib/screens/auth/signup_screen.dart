@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../models/user.dart';
+import '../../providers/auth_provider.dart';
+import '../../screens/customer/restaurant_discovery_screen.dart';
 import '../../theme/app_colors.dart';
-import '../../services/auth_service.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -30,11 +32,37 @@ class _SignupScreenState extends State<SignupScreen> {
     super.dispose();
   }
 
-  void _onSignup() {
-    if (_formKey.currentState!.validate()) {
+  Future<void> _onSignup() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final authProvider = context.read<AuthProvider>();
+    if (authProvider.isLoading) return;
+
+    await authProvider.signUp(
+      email: _emailController.text.trim(),
+      password: _passwordController.text,
+      name: _nameController.text.trim(),
+      role: _selectedRole,
+    );
+
+    if (!mounted) return;
+
+    if (authProvider.errorMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(authProvider.errorMessage!)),
+      );
+    } else if (_selectedRole == UserRole.customer) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const RestaurantDiscoveryScreen(),
+        ),
+        (_) => false,
+      );
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Account created successfully! Please log in.'),
+          content: Text('This role is coming soon!'),
         ),
       );
       Navigator.pop(context);
@@ -200,9 +228,17 @@ class _SignupScreenState extends State<SignupScreen> {
                   },
                 ),
                 const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: _onSignup,
-                  child: const Text('Create Account'),
+                Consumer<AuthProvider>(
+                  builder: (context, auth, _) => ElevatedButton(
+                    onPressed: auth.isLoading ? null : _onSignup,
+                    child: auth.isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Create Account'),
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Row(
