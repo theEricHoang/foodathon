@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import 'firebase_options.dart';
 import 'providers/order_provider.dart';
+import 'providers/auth_provider.dart';
 import 'providers/user_provider.dart';
 import 'repositories/order_repository.dart';
 import 'repositories/user_repository.dart';
@@ -26,6 +27,14 @@ void main() async {
     firestoreService: firestoreService,
   );
 
+  final userProvider = UserProvider(userRepository: userRepository);
+  final authProvider = AuthProvider(
+    userRepository: userRepository,
+    userProvider: userProvider,
+  );
+
+  authProvider.checkAuthState();
+
   runApp(
     MultiProvider(
       providers: [
@@ -35,6 +44,8 @@ void main() async {
         ChangeNotifierProvider(
           create: (_) => OrderProvider(orderRepository: orderRepository),
         ),
+        ChangeNotifierProvider.value(value: userProvider),
+        ChangeNotifierProvider.value(value: authProvider),
       ],
       child: const MainApp(),
     ),
