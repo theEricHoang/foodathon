@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/restaurant_provider.dart';
 import '../../screens/auth/login_screen.dart';
 import '../../theme/app_colors.dart';
-import '../../mock_data/mock_restaurants.dart';
 import '../../models/restaurant.dart';
 import 'restaurant_detail_screen.dart';
 
@@ -16,7 +16,48 @@ class RestaurantDiscoveryScreen extends StatefulWidget {
 }
 
 class _RestaurantDiscoveryScreenState extends State<RestaurantDiscoveryScreen> {
+  final _searchController = TextEditingController();
+  final Set<int> _selectedPriceLevels = {};
+  final Set<String> _selectedCuisines = {};
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<RestaurantProvider>().streamRestaurants();
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<Restaurant> get _filteredRestaurants {
+    final restaurants = context.read<RestaurantProvider>().restaurants;
+    final query = _searchController.text.toLowerCase();
+
+    return restaurants.where((r) {
+      if (query.isNotEmpty &&
+          !r.name.toLowerCase().contains(query) &&
+          !r.cuisine.toLowerCase().contains(query)) {
+        return false;
+      }
+      if (_selectedPriceLevels.isNotEmpty &&
+          !_selectedPriceLevels.contains(r.priceLevel)) {
+        return false;
+      }
+      if (_selectedCuisines.isNotEmpty &&
+          !_selectedCuisines.contains(r.cuisine)) {
+        return false;
+      }
+      return true;
+    }).toList();
+  }
+
   Future<void> _onSignOut() async {
+    context.read<RestaurantProvider>().clearRestaurants();
     await context.read<AuthProvider>().signOut();
 
     if (!mounted) return;
@@ -30,6 +71,9 @@ class _RestaurantDiscoveryScreenState extends State<RestaurantDiscoveryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final restaurantProvider = context.watch<RestaurantProvider>();
+    final restaurants = _filteredRestaurants;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Discover'),
@@ -45,7 +89,8 @@ class _RestaurantDiscoveryScreenState extends State<RestaurantDiscoveryScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: TextField(
-              readOnly: true,
+              controller: _searchController,
+              onChanged: (_) => setState(() {}),
               decoration: InputDecoration(
                 hintText: 'Search restaurants...',
                 prefixIcon: const Icon(Icons.search),
@@ -64,28 +109,69 @@ class _RestaurantDiscoveryScreenState extends State<RestaurantDiscoveryScreen> {
             child: ListView(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 12),
-              children: const [
-                _FilterChipItem(label: '\$'),
-                _FilterChipItem(label: '\$\$'),
-                _FilterChipItem(label: '\$\$\$'),
-                _FilterChipItem(label: 'Italian'),
-                _FilterChipItem(label: 'Mexican'),
-                _FilterChipItem(label: 'Japanese'),
-                _FilterChipItem(label: 'Indian'),
-                _FilterChipItem(label: 'American'),
-                _FilterChipItem(label: 'Thai'),
+              children: [
+                _FilterChipItem(
+                  label: '\$',
+                  selected: _selectedPriceLevels.contains(1),
+                  onSelected: (selected) => setState(() {
+                    selected
+                        ? _selectedPriceLevels.add(1)
+                        : _selectedPriceLevels.remove(1);
+                  }),
+                ),
+                _FilterChipItem(
+                  label: '\$\$',
+                  selected: _selectedPriceLevels.contains(2),
+                  onSelected: (selected) => setState(() {
+                    selected
+                        ? _selectedPriceLevels.add(2)
+                        : _selectedPriceLevels.remove(2);
+                  }),
+                ),
+                _FilterChipItem(
+                  label: '\$\$\$',
+                  selected: _selectedPriceLevels.contains(3),
+                  onSelected: (selected) => setState(() {
+                    selected
+                        ? _selectedPriceLevels.add(3)
+                        : _selectedPriceLevels.remove(3);
+                  }),
+                ),
+                for (final cuisine in const [
+                  'Italian',
+                  'Mexican',
+                  'Japanese',
+                  'Indian',
+                  'American',
+                  'Thai',
+                ])
+                  _FilterChipItem(
+                    label: cuisine,
+                    selected: _selectedCuisines.contains(cuisine),
+                    onSelected: (selected) => setState(() {
+                      selected
+                          ? _selectedCuisines.add(cuisine)
+                          : _selectedCuisines.remove(cuisine);
+                    }),
+                  ),
               ],
             ),
           ),
           const SizedBox(height: 8),
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: mockRestaurants.length,
-              itemBuilder: (context, index) {
-                return _RestaurantCard(restaurant: mockRestaurants[index]);
-              },
-            ),
+            child: restaurantProvider.isLoading &&
+                    restaurantProvider.restaurants.isEmpty
+                ? const Center(child: CircularProgressIndicator())
+                : restaurants.isEmpty
+                    ? const Center(child: Text('No restaurants found'))
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: restaurants.length,
+                        itemBuilder: (context, index) {
+                          return _RestaurantCard(
+                              restaurant: restaurants[index]);
+                        },
+                      ),
           ),
         ],
       ),
@@ -95,8 +181,14 @@ class _RestaurantDiscoveryScreenState extends State<RestaurantDiscoveryScreen> {
 
 class _FilterChipItem extends StatelessWidget {
   final String label;
+  final bool selected;
+  final ValueChanged<bool> onSelected;
 
-  const _FilterChipItem({required this.label});
+  const _FilterChipItem({
+    required this.label,
+    required this.selected,
+    required this.onSelected,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -104,11 +196,13 @@ class _FilterChipItem extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: FilterChip(
         label: Text(label),
-        selected: false,
-        onSelected: (_) {},
+        selected: selected,
+        onSelected: onSelected,
         backgroundColor: AppColors.surfaceVariant,
         selectedColor: AppColors.primary,
-        labelStyle: const TextStyle(color: AppColors.onSurface),
+        labelStyle: TextStyle(
+          color: selected ? AppColors.onPrimary : AppColors.onSurface,
+        ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
           side: BorderSide(color: AppColors.silver.withAlpha(128)),
