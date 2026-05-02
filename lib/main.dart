@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'firebase_options.dart';
+import 'providers/auth_provider.dart';
 import 'providers/user_provider.dart';
 import 'repositories/user_repository.dart';
 import 'screens/auth/login_screen.dart';
@@ -21,12 +22,19 @@ void main() async {
     firestoreService: firestoreService,
   );
 
+  final userProvider = UserProvider(userRepository: userRepository);
+  final authProvider = AuthProvider(
+    userRepository: userRepository,
+    userProvider: userProvider,
+  );
+
+  authProvider.checkAuthState();
+
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(
-          create: (_) => UserProvider(userRepository: userRepository),
-        ),
+        ChangeNotifierProvider.value(value: userProvider),
+        ChangeNotifierProvider.value(value: authProvider),
       ],
       child: const MainApp(),
     ),
