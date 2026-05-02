@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/runner_provider.dart';
+import '../../providers/user_provider.dart';
+import '../../screens/auth/login_screen.dart';
 import '../../theme/app_colors.dart';
 import '../../mock_data/mock_orders.dart';
 import '../../models/order.dart';
@@ -18,6 +23,36 @@ class _RunnerDashboardScreenState extends State<RunnerDashboardScreen> {
   void initState() {
     super.initState();
     _availableOrders = List.of(mockOrders);
+    _loadRunnerProfile();
+  }
+
+  Future<void> _loadRunnerProfile() async {
+    final userId = context.read<UserProvider>().currentUser!.id;
+    final runnerProvider = context.read<RunnerProvider>();
+    await runnerProvider.fetchRunnerByUserId(userId);
+    if (runnerProvider.currentRunner == null && runnerProvider.errorMessage == null) {
+      await runnerProvider.createRunner(userId: userId);
+    }
+  }
+
+  Future<void> _onSignOut() async {
+    final runnerProvider = context.read<RunnerProvider>();
+    if (runnerProvider.currentRunner?.isOnline == true) {
+      await runnerProvider.goOffline();
+    }
+    runnerProvider.clearCurrentRunner();
+
+    if (!mounted) return;
+
+    await context.read<AuthProvider>().signOut();
+
+    if (!mounted) return;
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (_) => false,
+    );
   }
 
   void _acceptOrder(int index) {
@@ -36,18 +71,28 @@ class _RunnerDashboardScreenState extends State<RunnerDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Runner Dashboard')),
+      appBar: AppBar(
+        title: const Text('Runner Dashboard'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: _onSignOut,
+          ),
+        ],
+      ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Text(
-              'Hello, Runner!',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.onSurface,
-                  ),
+            child: Consumer<UserProvider>(
+              builder: (context, userProvider, _) => Text(
+                'Hello, ${userProvider.currentUser?.name ?? 'Runner'}!',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.onSurface,
+                    ),
+              ),
             ),
           ),
           Expanded(
