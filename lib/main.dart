@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'firebase_options.dart';
+import 'providers/order_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/user_provider.dart';
+import 'repositories/order_repository.dart';
 import 'repositories/user_repository.dart';
 import 'screens/auth/login_screen.dart';
 import 'services/auth_service.dart';
@@ -21,6 +23,9 @@ void main() async {
     authService: authService,
     firestoreService: firestoreService,
   );
+  final orderRepository = OrderRepository(
+    firestoreService: firestoreService,
+  );
 
   final userProvider = UserProvider(userRepository: userRepository);
   final authProvider = AuthProvider(
@@ -33,6 +38,12 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider(
+          create: (_) => UserProvider(userRepository: userRepository),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => OrderProvider(orderRepository: orderRepository),
+        ),
         ChangeNotifierProvider.value(value: userProvider),
         ChangeNotifierProvider.value(value: authProvider),
       ],
