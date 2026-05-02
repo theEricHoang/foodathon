@@ -1,16 +1,45 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../screens/auth/login_screen.dart';
 import '../../theme/app_colors.dart';
 import '../../mock_data/mock_restaurants.dart';
 import '../../models/restaurant.dart';
 import 'restaurant_detail_screen.dart';
 
-class RestaurantDiscoveryScreen extends StatelessWidget {
+class RestaurantDiscoveryScreen extends StatefulWidget {
   const RestaurantDiscoveryScreen({super.key});
+
+  @override
+  State<RestaurantDiscoveryScreen> createState() =>
+      _RestaurantDiscoveryScreenState();
+}
+
+class _RestaurantDiscoveryScreenState extends State<RestaurantDiscoveryScreen> {
+  Future<void> _onSignOut() async {
+    await context.read<AuthProvider>().signOut();
+
+    if (!mounted) return;
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (_) => false,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Discover')),
+      appBar: AppBar(
+        title: const Text('Discover'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: _onSignOut,
+          ),
+        ],
+      ),
       body: Column(
         children: [
           Padding(
