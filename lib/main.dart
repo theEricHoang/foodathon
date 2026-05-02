@@ -33,7 +33,7 @@ void main() async {
   );
   final restaurantRepository = RestaurantRepository(
     firestoreService: firestoreService,
-    storageService: storageService
+    storageService: storageService,
   );
 
   final userProvider = UserProvider(userRepository: userRepository);
@@ -54,7 +54,7 @@ void main() async {
           create: (_) => OrderProvider(orderRepository: orderRepository),
         ),
         ChangeNotifierProvider(
-          create: (_) => RestaurantProvider(restaurantRepository: restaurantRepository)
+          create: (_) => RestaurantProvider(restaurantRepository: restaurantRepository),
         ),
         ChangeNotifierProvider.value(value: userProvider),
         ChangeNotifierProvider.value(value: authProvider),

@@ -3,9 +3,9 @@ import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'dart:io';
 
-import "../repositories/restaurant_repository.dart";
-import "../models/restaurant.dart";
-import "../models/menu_item.dart";
+import '../repositories/restaurant_repository.dart';
+import '../models/restaurant.dart';
+import '../models/menu_item.dart';
 
 class RestaurantProvider extends ChangeNotifier {
   final RestaurantRepository _restaurantRepository;
@@ -49,7 +49,7 @@ class RestaurantProvider extends ChangeNotifier {
       );
       _currentRestaurant = restaurant;
     } catch (e) {
-      _errorMessage = 'Failed to create restaurant: $e';
+      _errorMessage = e.toString();
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -63,7 +63,7 @@ class RestaurantProvider extends ChangeNotifier {
     try {
       _restaurants = await _restaurantRepository.fetchRestaurants();
     } catch (e) {
-      _errorMessage = 'Failed to load restaurants: $e';
+      _errorMessage = e.toString();
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -129,13 +129,19 @@ class RestaurantProvider extends ChangeNotifier {
     }
   }
 
-  void streamRestaurant() {
+  void streamRestaurants() {
     _restaurantsSubscription?.cancel();
-    _restaurantsSubscription = 
-      _restaurantRepository.streamRestaurants().listen((restaurants) {
-    _restaurants = restaurants;
-    notifyListeners();
-    });
+    _restaurantsSubscription =
+      _restaurantRepository.streamRestaurants().listen(
+        (restaurants) {
+          _restaurants = restaurants;
+          notifyListeners();
+        },
+        onError: (e) {
+          _errorMessage = e.toString();
+          notifyListeners();
+        },
+      );
   }
 
   Future<void> fetchMenuItems(String restaurantId) async {
@@ -206,18 +212,19 @@ class RestaurantProvider extends ChangeNotifier {
 
   void clearRestaurants() {
     _restaurantsSubscription?.cancel();
+    _restaurantsSubscription = null;
     _restaurants = [];
     notifyListeners();
   }
 
-   void clearError() {
+  void clearError() {
     _errorMessage = null;
     notifyListeners();
-   }
+  }
 
   @override
   void dispose() {
     _restaurantsSubscription?.cancel();
     super.dispose();
-  } 
+  }
 }
