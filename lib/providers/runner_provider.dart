@@ -2,8 +2,8 @@ import 'package:flutter/foundation.dart';
 
 import 'dart:async';
 
-import "../repositories/runner_repository.dart";
-import "../models/runner.dart";
+import '../repositories/runner_repository.dart';
+import '../models/runner.dart';
 
 class RunnerProvider extends ChangeNotifier {
   final RunnerRepository _runnerRepository;
@@ -18,7 +18,7 @@ class RunnerProvider extends ChangeNotifier {
   RunnerProvider({
     required RunnerRepository runnerRepository,
   }) : _runnerRepository = runnerRepository;
-  
+
   Runner? get currentRunner => _currentRunner;
   List<Runner> get availableRunners => _availableRunners;
   bool get isLoading => _isLoading;
@@ -34,7 +34,7 @@ class RunnerProvider extends ChangeNotifier {
       _currentRunner = runner;
       _listenToRunner(runner.id);
     } catch (e) {
-      _errorMessage = 'Failed to create runner: $e';
+      _errorMessage = e.toString();
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -53,7 +53,7 @@ class RunnerProvider extends ChangeNotifier {
         _listenToRunner(runnerId);
       }
     } catch (e) {
-      _errorMessage = 'Failed to fetch runner: $e';
+      _errorMessage = e.toString();
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -72,32 +72,47 @@ class RunnerProvider extends ChangeNotifier {
         _listenToRunner(runner.id);
       }
     } catch (e) {
-      _errorMessage = 'Failed to fetch runner by user ID: $e';
+      _errorMessage = e.toString();
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  Future<void> goOnline() {
-    if (_currentRunner == null) {
-      _errorMessage = 'No runner to go online';
+  Future<void> goOnline() async {
+    if (_currentRunner == null) return;
+
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _runnerRepository.goOnline(_currentRunner!.id);
+    } catch (e) {
+      _errorMessage = e.toString();
+    } finally {
+      _isLoading = false;
       notifyListeners();
-      return Future.error(_errorMessage!);
     }
-    return _runnerRepository.goOnline(_currentRunner!.id);
   }
 
-  Future<void> goOffline() {
-    if (_currentRunner == null) {
-      _errorMessage = 'No runner to go offline';
+  Future<void> goOffline() async {
+    if (_currentRunner == null) return;
+
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _runnerRepository.goOffline(_currentRunner!.id);
+    } catch (e) {
+      _errorMessage = e.toString();
+    } finally {
+      _isLoading = false;
       notifyListeners();
-      return Future.error(_errorMessage!);
     }
-    return _runnerRepository.goOffline(_currentRunner!.id);
   }
 
-  
   Future<void> updateLocation({
     required double latitude,
     required double longitude,
@@ -111,7 +126,8 @@ class RunnerProvider extends ChangeNotifier {
         longitude: longitude,
       );
     } catch (e) {
-      _errorMessage = 'Failed to update location: $e';
+      _errorMessage = e.toString();
+      notifyListeners();
     }
   }
 
@@ -134,12 +150,18 @@ class RunnerProvider extends ChangeNotifier {
   }
 
   void streamAvailableRunners() {
-    _runnerSubscription?.cancel();
+    _availableRunnersSubscription?.cancel();
     _availableRunnersSubscription =
-        _runnerRepository.streamAvailableRunners().listen((runners) {
-      _availableRunners = runners;
-      notifyListeners();
-    });
+        _runnerRepository.streamAvailableRunners().listen(
+      (runners) {
+        _availableRunners = runners;
+        notifyListeners();
+      },
+      onError: (e) {
+        _errorMessage = e.toString();
+        notifyListeners();
+      },
+    );
   }
 
   void clearCurrentRunner() {
@@ -164,10 +186,16 @@ class RunnerProvider extends ChangeNotifier {
   void _listenToRunner(String runnerId) {
     _runnerSubscription?.cancel();
     _runnerSubscription =
-        _runnerRepository.streamRunner(runnerId).listen((runner) {
-      _currentRunner = runner;
-      notifyListeners();
-    });
+        _runnerRepository.streamRunner(runnerId).listen(
+      (runner) {
+        _currentRunner = runner;
+        notifyListeners();
+      },
+      onError: (e) {
+        _errorMessage = e.toString();
+        notifyListeners();
+      },
+    );
   }
 
   @override
