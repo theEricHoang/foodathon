@@ -1,6 +1,5 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:foodathon/services/storage_service.dart';
 import 'package:provider/provider.dart';
 
 import 'firebase_options.dart';
@@ -8,13 +7,15 @@ import 'providers/order_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/user_provider.dart';
 import 'providers/restaurant_provider.dart';
+import 'providers/runner_provider.dart';
 import 'repositories/order_repository.dart';
 import 'repositories/user_repository.dart';
 import 'repositories/restaurant_repository.dart';
+import 'repositories/runner_repository.dart';
 import 'screens/auth/login_screen.dart';
 import 'services/auth_service.dart';
 import 'services/firestore_service.dart';
-
+import 'services/storage_service.dart';
 import 'theme/app_theme.dart';
 
 void main() async {
@@ -34,6 +35,9 @@ void main() async {
   final restaurantRepository = RestaurantRepository(
     firestoreService: firestoreService,
     storageService: storageService,
+  );
+  final runnerRepository = RunnerRepository(
+    firestoreService: firestoreService,
   );
 
   final userProvider = UserProvider(userRepository: userRepository);
@@ -55,6 +59,9 @@ void main() async {
         ),
         ChangeNotifierProvider(
           create: (_) => RestaurantProvider(restaurantRepository: restaurantRepository),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => RunnerProvider(runnerRepository: runnerRepository),
         ),
         ChangeNotifierProvider.value(value: userProvider),
         ChangeNotifierProvider.value(value: authProvider),
