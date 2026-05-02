@@ -23,7 +23,7 @@ class _RunnerDashboardScreenState extends State<RunnerDashboardScreen> {
   void initState() {
     super.initState();
     _availableOrders = List.of(mockOrders);
-    _loadRunnerProfile();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadRunnerProfile());
   }
 
   Future<void> _loadRunnerProfile() async {
