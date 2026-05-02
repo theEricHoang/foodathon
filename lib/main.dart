@@ -1,3 +1,4 @@
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -23,7 +24,9 @@ import 'theme/app_theme.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
+  await FirebaseAppCheck.instance.activate(
+    providerAndroid: AndroidDebugProvider(),
+  );
   final authService = AuthService();
   final firestoreService = FirestoreService();
   final storageService = StorageService();
@@ -31,16 +34,12 @@ void main() async {
     authService: authService,
     firestoreService: firestoreService,
   );
-  final orderRepository = OrderRepository(
-    firestoreService: firestoreService,
-  );
+  final orderRepository = OrderRepository(firestoreService: firestoreService);
   final restaurantRepository = RestaurantRepository(
     firestoreService: firestoreService,
     storageService: storageService,
   );
-  final runnerRepository = RunnerRepository(
-    firestoreService: firestoreService,
-  );
+  final runnerRepository = RunnerRepository(firestoreService: firestoreService);
 
   final userProvider = UserProvider(userRepository: userRepository);
   final authProvider = AuthProvider(
@@ -57,7 +56,8 @@ void main() async {
           create: (_) => OrderProvider(orderRepository: orderRepository),
         ),
         ChangeNotifierProvider(
-          create: (_) => RestaurantProvider(restaurantRepository: restaurantRepository),
+          create: (_) =>
+              RestaurantProvider(restaurantRepository: restaurantRepository),
         ),
         ChangeNotifierProvider(
           create: (_) => RunnerProvider(runnerRepository: runnerRepository),
@@ -86,8 +86,7 @@ class MainApp extends StatelessWidget {
               body: Center(child: CircularProgressIndicator()),
             );
           }
-          if (user.hasUser &&
-              user.currentUser!.role == UserRole.customer) {
+          if (user.hasUser && user.currentUser!.role == UserRole.customer) {
             return const RestaurantDiscoveryScreen();
           }
           return const LoginScreen();
