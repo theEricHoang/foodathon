@@ -30,7 +30,16 @@ class RestaurantRepository {
     return Restaurant.fromJson(data);
   }
 
-  
+  Future<Restaurant?> fetchRestaurantByOwnerId(String ownerId) async {
+    final docs = await _firestoreService.queryCollection(
+      _restaurantsCollection,
+      field: 'ownerId',
+      value: ownerId,
+    );
+    if (docs.isEmpty) return null;
+    return Restaurant.fromJson(docs.first);
+  }
+
   Future<Restaurant> createRestaurant({
     required String ownerId, 
     required String name, 

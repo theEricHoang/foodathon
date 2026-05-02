@@ -70,6 +70,20 @@ class RestaurantProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> fetchRestaurantByOwnerId(String ownerId) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      _currentRestaurant = await _restaurantRepository.fetchRestaurantByOwnerId(ownerId);
+    } catch (e) {
+      _errorMessage = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> fetchRestaurant(String restaurantId) async {
     _isLoading = true;
     _errorMessage = null;
