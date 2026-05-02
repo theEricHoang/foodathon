@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../screens/customer/restaurant_discovery_screen.dart';
 import '../../theme/app_colors.dart';
 import 'signup_screen.dart';
-import '../../services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -24,10 +26,30 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _onLogin() {
-    if (_formKey.currentState!.validate()) {
+  Future<void> _onLogin() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final authProvider = context.read<AuthProvider>();
+    if (authProvider.isLoading) return;
+
+    await authProvider.signIn(
+      email: _emailController.text.trim(),
+      password: _passwordController.text,
+    );
+
+    if (!mounted) return;
+
+    if (authProvider.errorMessage != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Login successful!')),
+        SnackBar(content: Text(authProvider.errorMessage!)),
+      );
+    } else {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const RestaurantDiscoveryScreen(),
+        ),
+        (_) => false,
       );
     }
   }
@@ -121,9 +143,17 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: _onLogin,
-                  child: const Text('Log In'),
+                Consumer<AuthProvider>(
+                  builder: (context, auth, _) => ElevatedButton(
+                    onPressed: auth.isLoading ? null : _onLogin,
+                    child: auth.isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Log In'),
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Row(
