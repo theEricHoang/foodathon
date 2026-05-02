@@ -1,3 +1,4 @@
+import 'dart:io';
 import '../services/firestore_service.dart';
 import '../services/storage_service.dart';
 import '../models/menu_item.dart';
@@ -29,7 +30,7 @@ class RestaurantRepository {
     return Restaurant.fromJson(data);
   }
 
-  /*
+  
   Future<Restaurant> createRestaurant({
     required String ownerId, 
     required String name, 
@@ -38,8 +39,27 @@ class RestaurantRepository {
     required int priceLevel, 
     File? image}
     ) async {
+      final restaurantId = Uuid().v4();
+      final restaurant = Restaurant(
+        id: restaurantId,
+        ownerId: ownerId,
+        name: name,
+        description: description,
+        cuisine: cuisine,
+        priceLevel: priceLevel,
+        rating: 0.0,
+      );
+      await _firestoreService.setDocument(_restaurantsCollection, restaurantId, restaurant.toJson());
+      if (image != null) {
+        await _storageService.uploadFile(
+          'restaurants/$restaurantId/photo.jpg', 
+          image,
+        );
+      }
+      return restaurant;
+    }
+
       
-  */
 
   Future<void> updateRestaurant({
     required String restaurantId, 
