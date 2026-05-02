@@ -10,6 +10,7 @@ dependencies:
   cached_network_image: ^3.4.1
   cloud_firestore: ^6.3.0
   equatable: ^2.0.8
+  firebase_app_check: ^0.4.3
   firebase_auth: ^6.4.0
   firebase_core: ^4.7.0
   firebase_messaging: ^16.2.0
