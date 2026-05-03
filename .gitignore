@@ -47,3 +47,4 @@ app.*.map.json
 # API keys / secrets
 android/secrets.properties
 ios/Runner/Secrets.xcconfig
+lib/config/service_account.dart
