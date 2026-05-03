@@ -1,22 +1,19 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:provider/provider.dart';
 
-import '../../models/menu_item.dart';
 import '../../mock_data/mock_route.dart';
 import '../../models/order.dart';
+import '../../providers/order_provider.dart';
 import '../../theme/app_colors.dart';
 import 'restaurant_discovery_screen.dart';
 
 class OrderStatusScreen extends StatefulWidget {
-  final Map<String, int> cart;
-  final List<MenuItem> menuItems;
+  final String orderId;
 
   const OrderStatusScreen({
     super.key,
-    required this.cart,
-    required this.menuItems,
+    required this.orderId,
   });
 
   @override
@@ -24,80 +21,27 @@ class OrderStatusScreen extends StatefulWidget {
 }
 
 class _OrderStatusScreenState extends State<OrderStatusScreen> {
-  int _statusIndex = 0;
-  Timer? _statusTimer;
-  Timer? _runnerTimer;
-  int _runnerWaypointIndex = 0;
   GoogleMapController? _mapController;
-
-  OrderStatus get _currentStatus => OrderStatus.values[_statusIndex];
 
   @override
   void initState() {
     super.initState();
-    _statusTimer = Timer.periodic(
-      const Duration(seconds: 5),
-      (_) => _advanceStatus(),
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final orderProvider = context.read<OrderProvider>();
+      if (orderProvider.currentOrder?.id != widget.orderId) {
+        orderProvider.fetchOrder(widget.orderId);
+      }
+    });
   }
 
   @override
   void dispose() {
-    _statusTimer?.cancel();
-    _runnerTimer?.cancel();
     _mapController?.dispose();
     super.dispose();
   }
 
-  void _advanceStatus() {
-    if (_statusIndex >= OrderStatus.values.length - 1) {
-      _statusTimer?.cancel();
-      return;
-    }
-
-    setState(() {
-      _statusIndex++;
-    });
-
-    if (_currentStatus == OrderStatus.headedToYou) {
-      _startRunnerSimulation();
-    } else if (_currentStatus == OrderStatus.arrived) {
-      _runnerTimer?.cancel();
-      _runnerWaypointIndex = mockRunnerRoute.length - 1;
-      _mapController?.animateCamera(
-        CameraUpdate.newLatLng(mockCustomerLocation),
-      );
-    }
-  }
-
-  void _startRunnerSimulation() {
-    _runnerWaypointIndex = 0;
-    final interval = 5000 ~/ mockRunnerRoute.length;
-    _runnerTimer = Timer.periodic(
-      Duration(milliseconds: interval),
-      (_) => _moveRunner(),
-    );
-  }
-
-  void _moveRunner() {
-    if (_runnerWaypointIndex >= mockRunnerRoute.length - 1) {
-      _runnerTimer?.cancel();
-      return;
-    }
-
-    if (!mounted) return;
-
-    setState(() {
-      _runnerWaypointIndex++;
-    });
-
-    _mapController?.animateCamera(
-      CameraUpdate.newLatLng(mockRunnerRoute[_runnerWaypointIndex]),
-    );
-  }
-
   Set<Marker> _buildMarkers() {
-    final markers = <Marker>{
+    return {
       Marker(
         markerId: const MarkerId('restaurant'),
         position: mockRestaurantLocation,
@@ -111,37 +55,6 @@ class _OrderStatusScreenState extends State<OrderStatusScreen> {
         infoWindow: const InfoWindow(title: 'Delivery Location'),
       ),
     };
-
-    if (_currentStatus == OrderStatus.headedToYou ||
-        _currentStatus == OrderStatus.arrived) {
-      markers.add(
-        Marker(
-          markerId: const MarkerId('runner'),
-          position: mockRunnerRoute[_runnerWaypointIndex],
-          icon:
-              BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
-          infoWindow: const InfoWindow(title: 'Runner'),
-        ),
-      );
-    }
-
-    return markers;
-  }
-
-  Set<Polyline> _buildPolylines() {
-    if (_currentStatus != OrderStatus.headedToYou &&
-        _currentStatus != OrderStatus.arrived) {
-      return {};
-    }
-
-    return {
-      const Polyline(
-        polylineId: PolylineId('route'),
-        points: mockRunnerRoute,
-        color: AppColors.primary,
-        width: 4,
-      ),
-    };
   }
 
   @override
@@ -153,51 +66,64 @@ class _OrderStatusScreenState extends State<OrderStatusScreen> {
           title: const Text('Order Status'),
           automaticallyImplyLeading: false,
         ),
-        body: Column(
-          children: [
-            _OrderStatusStepper(currentStatus: _currentStatus),
-            const Divider(height: 1, color: AppColors.divider),
-            Expanded(
-              child: GoogleMap(
-                onMapCreated: (controller) => _mapController = controller,
-                initialCameraPosition: const CameraPosition(
-                  target: mockCustomerLocation,
-                  zoom: 14.0,
-                ),
-                markers: _buildMarkers(),
-                polylines: _buildPolylines(),
-                myLocationEnabled: false,
-                zoomControlsEnabled: false,
-                mapToolbarEnabled: false,
-              ),
-            ),
-            const Divider(height: 1, color: AppColors.divider),
-            _OrderReceiptSection(
-              cart: widget.cart,
-              menuItems: widget.menuItems,
-            ),
-          ],
-        ),
-        floatingActionButton: _currentStatus == OrderStatus.arrived
-            ? FloatingActionButton.extended(
-                onPressed: () {
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const RestaurantDiscoveryScreen(),
+        body: Consumer<OrderProvider>(
+          builder: (context, orderProvider, _) {
+            final order = orderProvider.currentOrder;
+
+            if (order == null) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            return Column(
+              children: [
+                _OrderStatusStepper(currentStatus: order.status),
+                const Divider(height: 1, color: AppColors.divider),
+                Expanded(
+                  child: GoogleMap(
+                    onMapCreated: (controller) => _mapController = controller,
+                    initialCameraPosition: const CameraPosition(
+                      target: mockCustomerLocation,
+                      zoom: 14.0,
                     ),
-                    (route) => false,
-                  );
-                },
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.onPrimary,
-                icon: const Icon(Icons.check),
-                label: const Text(
-                  'Done',
-                  style: TextStyle(fontWeight: FontWeight.w600),
+                    markers: _buildMarkers(),
+                    myLocationEnabled: false,
+                    zoomControlsEnabled: false,
+                    mapToolbarEnabled: false,
+                  ),
                 ),
-              )
-            : null,
+                const Divider(height: 1, color: AppColors.divider),
+                _OrderReceiptSection(order: order),
+              ],
+            );
+          },
+        ),
+        floatingActionButton: Consumer<OrderProvider>(
+          builder: (context, orderProvider, _) {
+            final order = orderProvider.currentOrder;
+            if (order == null || order.status != OrderStatus.arrived) {
+              return const SizedBox.shrink();
+            }
+            return FloatingActionButton.extended(
+              onPressed: () {
+                orderProvider.clearCurrentOrder();
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const RestaurantDiscoveryScreen(),
+                  ),
+                  (route) => false,
+                );
+              },
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.onPrimary,
+              icon: const Icon(Icons.check),
+              label: const Text(
+                'Done',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+            );
+          },
+        ),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       ),
     );
@@ -277,23 +203,12 @@ class _OrderStatusStepper extends StatelessWidget {
 }
 
 class _OrderReceiptSection extends StatelessWidget {
-  final Map<String, int> cart;
-  final List<MenuItem> menuItems;
+  final Order order;
 
-  const _OrderReceiptSection({
-    required this.cart,
-    required this.menuItems,
-  });
+  const _OrderReceiptSection({required this.order});
 
   @override
   Widget build(BuildContext context) {
-    final cartItems =
-        menuItems.where((item) => (cart[item.id] ?? 0) > 0).toList();
-    final total = cartItems.fold<double>(
-      0,
-      (sum, item) => sum + item.price * (cart[item.id] ?? 0),
-    );
-
     return ConstrainedBox(
       constraints: const BoxConstraints(maxHeight: 200),
       child: ListView(
@@ -307,16 +222,15 @@ class _OrderReceiptSection extends StatelessWidget {
                 ),
           ),
           const SizedBox(height: 8),
-          ...cartItems.map((item) {
-            final qty = cart[item.id]!;
-            final lineTotal = item.price * qty;
+          ...order.items.map((item) {
+            final lineTotal = item.price * item.quantity;
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 4),
               child: Row(
                 children: [
                   Expanded(
                     child: Text(
-                      '${item.name}  x$qty',
+                      '${item.name}  x${item.quantity}',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: AppColors.onSurface,
                           ),
@@ -345,7 +259,7 @@ class _OrderReceiptSection extends StatelessWidget {
                     ),
               ),
               Text(
-                '\$${total.toStringAsFixed(2)}',
+                '\$${order.total.toStringAsFixed(2)}',
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: AppColors.primary,

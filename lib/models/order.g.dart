@@ -30,7 +30,7 @@ Map<String, dynamic> _$OrderToJson(Order instance) => <String, dynamic>{
   'customerName': instance.customerName,
   'restaurantId': instance.restaurantId,
   'restaurantName': instance.restaurantName,
-  'items': instance.items,
+  'items': instance.items.map((e) => e.toJson()).toList(),
   'status': _$OrderStatusEnumMap[instance.status]!,
   'total': instance.total,
   'runnerId': instance.runnerId,

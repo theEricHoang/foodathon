@@ -33,7 +33,7 @@ enum OrderStatus {
       };
 }
 
-@JsonSerializable()
+@JsonSerializable(explicitToJson: true)
 class Order {
   final String id;
   final String customerId;

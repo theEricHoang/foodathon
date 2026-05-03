@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/restaurant_provider.dart';
 import '../../theme/app_colors.dart';
-import '../../mock_data/mock_menu_items.dart';
 import '../../models/menu_item.dart';
 import '../../models/restaurant.dart';
 import 'checkout_screen.dart';
@@ -18,6 +19,14 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
   final Map<String, int> _cart = {};
 
   int get _totalItems => _cart.values.fold(0, (sum, qty) => sum + qty);
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<RestaurantProvider>().fetchMenuItems(widget.restaurant.id);
+    });
+  }
 
   void _addToCart(String itemId) {
     setState(() {
@@ -38,51 +47,53 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final menuItems = mockMenuItems[widget.restaurant.name] ?? [];
+    final restaurantProvider = context.watch<RestaurantProvider>();
+    final menuItems = restaurantProvider.menuItems;
 
     return Scaffold(
       appBar: AppBar(title: Text(widget.restaurant.name)),
-      body: ListView(
-        padding: const EdgeInsets.only(bottom: 88),
-        children: [
-          _RestaurantHeader(restaurant: widget.restaurant),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Text(
-              'Menu',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.onSurface,
+      body: restaurantProvider.isLoading && menuItems.isEmpty
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(
+              padding: const EdgeInsets.only(bottom: 88),
+              children: [
+                _RestaurantHeader(restaurant: widget.restaurant),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: Text(
+                    'Menu',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.onSurface,
+                        ),
                   ),
+                ),
+                if (menuItems.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Text('No menu items available.'),
+                  )
+                else
+                  ...menuItems.map(
+                    (item) => _MenuItemTile(
+                      item: item,
+                      quantity: _cart[item.id] ?? 0,
+                      onAdd: () => _addToCart(item.id),
+                      onRemove: () => _removeFromCart(item.id),
+                    ),
+                  ),
+              ],
             ),
-          ),
-          if (menuItems.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text('No menu items available.'),
-            )
-          else
-            ...menuItems.map(
-              (item) => _MenuItemTile(
-                item: item,
-                quantity: _cart[item.id] ?? 0,
-                onAdd: () => _addToCart(item.id),
-                onRemove: () => _removeFromCart(item.id),
-              ),
-            ),
-        ],
-      ),
       floatingActionButton: _totalItems > 0
           ? FloatingActionButton.extended(
               onPressed: () {
-                final menuItems =
-                    mockMenuItems[widget.restaurant.name] ?? [];
                 Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (_) => CheckoutScreen(
                       cart: Map<String, int>.from(_cart),
                       menuItems: menuItems,
+                      restaurant: widget.restaurant,
                     ),
                   ),
                 );
