@@ -1,5 +1,6 @@
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -17,9 +18,19 @@ import 'screens/auth/login_screen.dart';
 import 'services/auth_service.dart';
 import 'services/firestore_service.dart';
 import 'services/location_service.dart';
+import 'services/messaging_service.dart';
+import 'services/notification_service.dart';
 import 'services/storage_service.dart';
 import 'theme/app_theme.dart';
 import 'utils/role_routing.dart';
+
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+  debugPrint('Background message: ${message.messageId}');
+}
+
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,6 +38,8 @@ void main() async {
   await FirebaseAppCheck.instance.activate(
     providerAndroid: AndroidDebugProvider(),
   );
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
   final authService = AuthService();
   final firestoreService = FirestoreService();
   final storageService = StorageService();
@@ -41,11 +54,17 @@ void main() async {
   );
   final runnerRepository = RunnerRepository(firestoreService: firestoreService);
   final locationService = LocationService();
+  final messagingService = MessagingService();
+  final notificationService =
+      NotificationService(firestoreService: firestoreService);
+
+  await messagingService.initialize(navigatorKey: navigatorKey);
 
   final userProvider = UserProvider(userRepository: userRepository);
   final authProvider = AuthProvider(
     userRepository: userRepository,
     userProvider: userProvider,
+    messagingService: messagingService,
   );
 
   authProvider.checkAuthState();
@@ -54,7 +73,10 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(
-          create: (_) => OrderProvider(orderRepository: orderRepository),
+          create: (_) => OrderProvider(
+            orderRepository: orderRepository,
+            notificationService: notificationService,
+          ),
         ),
         ChangeNotifierProvider(
           create: (_) =>
@@ -80,6 +102,7 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'Foodathon',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,

@@ -1,0 +1,12 @@
+// TODO: Replace with your Firebase service account credentials.
+// Go to Firebase Console → Project Settings → Service Accounts → Generate New Private Key
+const serviceAccountJson = <String, dynamic>{
+  'type': 'service_account',
+  'project_id': 'foodathon',
+  'private_key_id': 'YOUR_PRIVATE_KEY_ID',
+  'private_key': 'YOUR_PRIVATE_KEY',
+  'client_email': 'YOUR_CLIENT_EMAIL',
+  'client_id': 'YOUR_CLIENT_ID',
+  'auth_uri': 'https://accounts.google.com/o/oauth2/auth',
+  'token_uri': 'https://oauth2.googleapis.com/token',
+};
