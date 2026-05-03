@@ -53,20 +53,31 @@ class OrderRepository {
     }
   
   Future<void> assignRunner({
-    required String orderId, 
-    required String runnerId, 
-    double? distanceToRestaurant, 
-    double? distanceToCustomer, 
-    double? commission}
-    ) {
+    required String orderId,
+    required String runnerId,
+    double? distanceToRestaurant,
+    double? distanceToCustomer,
+    double? commission,
+  }) {
+    final docRef = _firestoreService.docRef(_collection, orderId);
+    return _firestoreService.runTransaction((transaction) async {
+      final snapshot = await transaction.get(docRef);
+      final data = snapshot.data() as Map<String, dynamic>?;
+      if (data == null) {
+        throw Exception('Order not found');
+      }
+      if (data['runnerId'] != null) {
+        throw Exception('Order already taken');
+      }
       final updateData = <String, dynamic>{
         'runnerId': runnerId,
         'distanceToRestaurant': ?distanceToRestaurant,
         'distanceToCustomer': ?distanceToCustomer,
         'commission': ?commission,
       };
-      return _firestoreService.updateDocument(_collection, orderId, updateData);
-    }
+      transaction.update(docRef, updateData);
+    });
+  }
     
   Future<void> cancelOrder(String orderId) {
     return _firestoreService.deleteDocument(_collection, orderId);

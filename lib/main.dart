@@ -16,6 +16,7 @@ import 'repositories/runner_repository.dart';
 import 'screens/auth/login_screen.dart';
 import 'services/auth_service.dart';
 import 'services/firestore_service.dart';
+import 'services/location_service.dart';
 import 'services/storage_service.dart';
 import 'theme/app_theme.dart';
 import 'utils/role_routing.dart';
@@ -39,6 +40,7 @@ void main() async {
     storageService: storageService,
   );
   final runnerRepository = RunnerRepository(firestoreService: firestoreService);
+  final locationService = LocationService();
 
   final userProvider = UserProvider(userRepository: userRepository);
   final authProvider = AuthProvider(
@@ -59,7 +61,10 @@ void main() async {
               RestaurantProvider(restaurantRepository: restaurantRepository),
         ),
         ChangeNotifierProvider(
-          create: (_) => RunnerProvider(runnerRepository: runnerRepository),
+          create: (_) => RunnerProvider(
+            runnerRepository: runnerRepository,
+            locationService: locationService,
+          ),
         ),
         ChangeNotifierProvider.value(value: userProvider),
         ChangeNotifierProvider.value(value: authProvider),

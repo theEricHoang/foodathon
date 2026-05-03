@@ -136,4 +136,14 @@ class FirestoreService {
           }).toList();
         });
   }
+
+  DocumentReference docRef(String collection, String docId) {
+    return _firestore.collection(collection).doc(docId);
+  }
+
+  Future<T> runTransaction<T>(
+    Future<T> Function(Transaction transaction) handler,
+  ) {
+    return _firestore.runTransaction(handler);
+  }
 }

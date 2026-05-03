@@ -1,12 +1,15 @@
 import 'package:flutter/foundation.dart';
+import 'package:geolocator/geolocator.dart';
 
 import 'dart:async';
 
 import '../repositories/runner_repository.dart';
 import '../models/runner.dart';
+import '../services/location_service.dart';
 
 class RunnerProvider extends ChangeNotifier {
   final RunnerRepository _runnerRepository;
+  final LocationService _locationService;
 
   Runner? _currentRunner;
   List<Runner> _availableRunners = [];
@@ -14,10 +17,13 @@ class RunnerProvider extends ChangeNotifier {
   String? _errorMessage;
   StreamSubscription<Runner?>? _runnerSubscription;
   StreamSubscription<List<Runner>>? _availableRunnersSubscription;
+  StreamSubscription<Position>? _positionSubscription;
 
   RunnerProvider({
     required RunnerRepository runnerRepository,
-  }) : _runnerRepository = runnerRepository;
+    required LocationService locationService,
+  })  : _runnerRepository = runnerRepository,
+        _locationService = locationService;
 
   Runner? get currentRunner => _currentRunner;
   List<Runner> get availableRunners => _availableRunners;
@@ -88,6 +94,25 @@ class RunnerProvider extends ChangeNotifier {
 
     try {
       await _runnerRepository.goOnline(_currentRunner!.id);
+
+      final granted = await _locationService.requestPermission();
+      if (granted) {
+        final position = await _locationService.getCurrentPosition();
+        if (position != null) {
+          await updateLocation(
+            latitude: position.latitude,
+            longitude: position.longitude,
+          );
+        }
+        _positionSubscription?.cancel();
+        _positionSubscription =
+            _locationService.getPositionStream().listen((position) {
+          updateLocation(
+            latitude: position.latitude,
+            longitude: position.longitude,
+          );
+        });
+      }
     } catch (e) {
       _errorMessage = e.toString();
     } finally {
@@ -104,6 +129,8 @@ class RunnerProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      _positionSubscription?.cancel();
+      _positionSubscription = null;
       await _runnerRepository.goOffline(_currentRunner!.id);
     } catch (e) {
       _errorMessage = e.toString();
@@ -202,6 +229,7 @@ class RunnerProvider extends ChangeNotifier {
   void dispose() {
     _runnerSubscription?.cancel();
     _availableRunnersSubscription?.cancel();
+    _positionSubscription?.cancel();
     super.dispose();
   }
 }
