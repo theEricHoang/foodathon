@@ -150,6 +150,14 @@ class MockOrderRepository extends _i1.Mock implements _i3.OrderRepository {
           as _i4.Stream<List<_i2.Order>>);
 
   @override
+  _i4.Stream<List<_i2.Order>> streamAvailableOrders() =>
+      (super.noSuchMethod(
+            Invocation.method(#streamAvailableOrders, []),
+            returnValue: _i4.Stream<List<_i2.Order>>.empty(),
+          )
+          as _i4.Stream<List<_i2.Order>>);
+
+  @override
   _i4.Future<List<_i2.Order>> fetchCustomerOrders(String? customerId) =>
       (super.noSuchMethod(
             Invocation.method(#fetchCustomerOrders, [customerId]),
