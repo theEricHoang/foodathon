@@ -178,6 +178,15 @@ class OrderProvider extends ChangeNotifier {
     });
   }
 
+  void streamAvailableOrders() {
+    _ordersSubscription?.cancel();
+    _ordersSubscription =
+        _orderRepository.streamAvailableOrders().listen((orders) {
+      _orders = orders;
+      notifyListeners();
+    });
+  }
+
   void clearCurrentOrder() {
     _orderSubscription?.cancel();
     _orderSubscription = null;

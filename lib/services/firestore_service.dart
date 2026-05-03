@@ -84,10 +84,13 @@ class FirestoreService {
     String collection, {
     String? field,
     dynamic value,
+    bool isNull = false,
   }) {
     Query query = _firestore.collection(collection);
 
-    if (field != null && value != null) {
+    if (field != null && isNull) {
+      query = query.where(field, isNull: true);
+    } else if (field != null && value != null) {
       query = query.where(field, isEqualTo: value);
     }
 

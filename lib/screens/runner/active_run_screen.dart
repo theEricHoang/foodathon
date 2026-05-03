@@ -2,63 +2,49 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:provider/provider.dart';
 
 import '../../mock_data/mock_route.dart';
 import '../../models/order.dart';
+import '../../providers/order_provider.dart';
 import '../../theme/app_colors.dart';
 
 class ActiveRunScreen extends StatefulWidget {
-  final Order order;
+  final String orderId;
 
-  const ActiveRunScreen({super.key, required this.order});
+  const ActiveRunScreen({super.key, required this.orderId});
 
   @override
   State<ActiveRunScreen> createState() => _ActiveRunScreenState();
 }
 
 class _ActiveRunScreenState extends State<ActiveRunScreen> {
-  late OrderStatus _currentStatus;
-  Timer? _statusTimer;
   Timer? _runnerTimer;
   int _runnerWaypointIndex = 0;
   GoogleMapController? _mapController;
+  OrderStatus? _lastKnownStatus;
 
-  bool get _isHeadingToRestaurant =>
-      _currentStatus == OrderStatus.confirmed ||
-      _currentStatus == OrderStatus.readyForPickup;
+  bool _isHeadingToRestaurant(OrderStatus status) =>
+      status == OrderStatus.confirmed ||
+      status == OrderStatus.readyForPickup;
 
-  List<LatLng> get _activeRoute =>
-      _isHeadingToRestaurant ? mockRunnerToRestaurantRoute : mockRunnerRoute;
+  List<LatLng> _activeRoute(OrderStatus status) =>
+      _isHeadingToRestaurant(status) ? mockRunnerToRestaurantRoute : mockRunnerRoute;
 
   @override
   void initState() {
     super.initState();
-    _currentStatus = widget.order.status;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<OrderProvider>().fetchOrder(widget.orderId);
+    });
     _startRunnerSimulation(mockRunnerToRestaurantRoute);
-    _statusTimer = Timer(
-      const Duration(seconds: 8),
-      _advanceStatus,
-    );
   }
 
   @override
   void dispose() {
-    _statusTimer?.cancel();
     _runnerTimer?.cancel();
     _mapController?.dispose();
     super.dispose();
-  }
-
-  void _advanceStatus() {
-    if (!mounted) return;
-    setState(() {
-      _currentStatus = OrderStatus.readyForPickup;
-    });
-    _runnerTimer?.cancel();
-    _runnerWaypointIndex = mockRunnerToRestaurantRoute.length - 1;
-    _mapController?.animateCamera(
-      CameraUpdate.newLatLng(mockRestaurantLocation),
-    );
   }
 
   void _startRunnerSimulation(List<LatLng> route) {
@@ -71,7 +57,12 @@ class _ActiveRunScreenState extends State<ActiveRunScreen> {
   }
 
   void _moveRunner() {
-    final route = _activeRoute;
+    final orderProvider = context.read<OrderProvider>();
+    final currentStatus = orderProvider.currentOrder?.status;
+    final route = currentStatus != null
+        ? _activeRoute(currentStatus)
+        : mockRunnerToRestaurantRoute;
+
     if (_runnerWaypointIndex >= route.length - 1) {
       _runnerTimer?.cancel();
       return;
@@ -88,10 +79,12 @@ class _ActiveRunScreenState extends State<ActiveRunScreen> {
     );
   }
 
-  void _pickUpOrder() {
-    setState(() {
-      _currentStatus = OrderStatus.headedToYou;
-    });
+  Future<void> _pickUpOrder() async {
+    final orderProvider = context.read<OrderProvider>();
+    await orderProvider.updateOrderStatus(
+      orderId: widget.orderId,
+      status: OrderStatus.headedToYou,
+    );
     _startRunnerSimulation(mockRunnerRoute);
     _mapController?.animateCamera(
       CameraUpdate.newLatLngBounds(
@@ -104,30 +97,41 @@ class _ActiveRunScreenState extends State<ActiveRunScreen> {
     );
   }
 
-  void _deliverOrder() {
+  Future<void> _deliverOrder() async {
+    final orderProvider = context.read<OrderProvider>();
+    await orderProvider.updateOrderStatus(
+      orderId: widget.orderId,
+      status: OrderStatus.arrived,
+    );
+    orderProvider.clearCurrentOrder();
+
+    if (!mounted) return;
     Navigator.pop(context);
   }
 
-  Set<Marker> _buildMarkers() {
+  Set<Marker> _buildMarkers(OrderStatus status) {
     final markers = <Marker>{};
+    final route = _activeRoute(status);
 
     markers.add(
       Marker(
         markerId: const MarkerId('runner'),
-        position: _activeRoute[_runnerWaypointIndex],
+        position: route[_runnerWaypointIndex.clamp(0, route.length - 1)],
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
         infoWindow: const InfoWindow(title: 'You'),
       ),
     );
 
-    if (_isHeadingToRestaurant) {
+    final order = context.read<OrderProvider>().currentOrder;
+
+    if (_isHeadingToRestaurant(status)) {
       markers.add(
         Marker(
           markerId: const MarkerId('restaurant'),
           position: mockRestaurantLocation,
           icon:
               BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
-          infoWindow: InfoWindow(title: widget.order.restaurantName),
+          infoWindow: InfoWindow(title: order?.restaurantName ?? 'Restaurant'),
         ),
       );
     } else {
@@ -136,7 +140,7 @@ class _ActiveRunScreenState extends State<ActiveRunScreen> {
           markerId: const MarkerId('customer'),
           position: mockCustomerLocation,
           icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-          infoWindow: InfoWindow(title: widget.order.customerName),
+          infoWindow: InfoWindow(title: order?.customerName ?? 'Customer'),
         ),
       );
     }
@@ -144,11 +148,11 @@ class _ActiveRunScreenState extends State<ActiveRunScreen> {
     return markers;
   }
 
-  Set<Polyline> _buildPolylines() {
+  Set<Polyline> _buildPolylines(OrderStatus status) {
     return {
       Polyline(
         polylineId: const PolylineId('route'),
-        points: _activeRoute,
+        points: _activeRoute(status),
         color: AppColors.primary,
         width: 4,
       ),
@@ -164,30 +168,54 @@ class _ActiveRunScreenState extends State<ActiveRunScreen> {
           title: const Text('Active Run'),
           automaticallyImplyLeading: false,
         ),
-        body: Column(
-          children: [
-            _RunnerStatusStepper(currentStatus: _currentStatus),
-            const Divider(height: 1, color: AppColors.divider),
-            Expanded(
-              child: GoogleMap(
-                onMapCreated: (controller) => _mapController = controller,
-                initialCameraPosition: CameraPosition(
-                  target: mockRunnerStartLocation,
-                  zoom: 14.0,
+        body: Consumer<OrderProvider>(
+          builder: (context, orderProvider, _) {
+            final order = orderProvider.currentOrder;
+            if (order == null) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            final currentStatus = order.status;
+
+            if (_lastKnownStatus == OrderStatus.confirmed &&
+                currentStatus == OrderStatus.readyForPickup) {
+              _runnerTimer?.cancel();
+              _runnerWaypointIndex = mockRunnerToRestaurantRoute.length - 1;
+              _mapController?.animateCamera(
+                CameraUpdate.newLatLng(mockRestaurantLocation),
+              );
+            }
+            _lastKnownStatus = currentStatus;
+
+            return Column(
+              children: [
+                _RunnerStatusStepper(currentStatus: currentStatus),
+                const Divider(height: 1, color: AppColors.divider),
+                Expanded(
+                  child: GoogleMap(
+                    onMapCreated: (controller) => _mapController = controller,
+                    initialCameraPosition: CameraPosition(
+                      target: mockRunnerStartLocation,
+                      zoom: 14.0,
+                    ),
+                    markers: _buildMarkers(currentStatus),
+                    polylines: _buildPolylines(currentStatus),
+                    myLocationEnabled: false,
+                    zoomControlsEnabled: false,
+                    mapToolbarEnabled: false,
+                  ),
                 ),
-                markers: _buildMarkers(),
-                polylines: _buildPolylines(),
-                myLocationEnabled: false,
-                zoomControlsEnabled: false,
-                mapToolbarEnabled: false,
-              ),
-            ),
-            const Divider(height: 1, color: AppColors.divider),
-            _OrderDetailSection(order: widget.order),
-          ],
+                const Divider(height: 1, color: AppColors.divider),
+                _OrderDetailSection(order: order),
+              ],
+            );
+          },
         ),
-        floatingActionButton: _currentStatus == OrderStatus.readyForPickup
-            ? FloatingActionButton.extended(
+        floatingActionButton: Consumer<OrderProvider>(
+          builder: (context, orderProvider, _) {
+            final currentStatus = orderProvider.currentOrder?.status;
+            if (currentStatus == OrderStatus.readyForPickup) {
+              return FloatingActionButton.extended(
                 onPressed: _pickUpOrder,
                 backgroundColor: AppColors.primary,
                 foregroundColor: AppColors.onPrimary,
@@ -196,19 +224,22 @@ class _ActiveRunScreenState extends State<ActiveRunScreen> {
                   'Picked Up',
                   style: TextStyle(fontWeight: FontWeight.w600),
                 ),
-              )
-            : _currentStatus == OrderStatus.headedToYou
-                ? FloatingActionButton.extended(
-                    onPressed: _deliverOrder,
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.onPrimary,
-                    icon: const Icon(Icons.check),
-                    label: const Text(
-                      'Delivered',
-                      style: TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                  )
-                : null,
+              );
+            } else if (currentStatus == OrderStatus.headedToYou) {
+              return FloatingActionButton.extended(
+                onPressed: _deliverOrder,
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.onPrimary,
+                icon: const Icon(Icons.check),
+                label: const Text(
+                  'Delivered',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+              );
+            }
+            return const SizedBox.shrink();
+          },
+        ),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       ),
     );
