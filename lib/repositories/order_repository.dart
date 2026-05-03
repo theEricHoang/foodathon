@@ -59,7 +59,7 @@ class OrderRepository {
     double? distanceToCustomer, 
     double? commission}
     ) {
-      final updateData = {
+      final updateData = <String, dynamic>{
         'runnerId': runnerId,
         'distanceToRestaurant': ?distanceToRestaurant,
         'distanceToCustomer': ?distanceToCustomer,
@@ -88,6 +88,17 @@ class OrderRepository {
     return _firestoreService
       .streamCollection(_collection, field: 'restaurantId', value: restaurantId)
       .map((docs) => docs.map((data) => Order.fromJson(data)).toList());
+  }
+
+  Stream<List<Order>> streamAvailableOrders() {
+    return _firestoreService
+      .streamCollection(_collection, field: 'runnerId', isNull: true)
+      .map((docs) => docs
+          .map((data) => Order.fromJson(data))
+          .where((order) =>
+              order.status == OrderStatus.confirmed ||
+              order.status == OrderStatus.readyForPickup)
+          .toList());
   }
 
   Future<List<Order>> fetchCustomerOrders(String customerId) {
