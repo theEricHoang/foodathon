@@ -3,9 +3,13 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../providers/restaurant_provider.dart';
+import '../../providers/user_provider.dart';
 import '../../theme/app_colors.dart';
+import 'restaurant_dashboard_screen.dart';
 
 const _cuisines = [
   'Italian',
@@ -74,7 +78,7 @@ class _CreateRestaurantScreenState extends State<CreateRestaurantScreen> {
     });
   }
 
-  void _onSubmit() {
+  Future<void> _onSubmit() async {
     if (_menuItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Add at least one menu item')),
@@ -84,29 +88,51 @@ class _CreateRestaurantScreenState extends State<CreateRestaurantScreen> {
 
     if (!_formKey.currentState!.validate()) return;
 
-    final restaurantData = {
-      'name': _nameController.text.trim(),
-      'description': _descriptionController.text.trim(),
-      'cuisine': _selectedCuisine,
-      'priceLevel': _priceLevel,
-      'image': _restaurantImage,
-      'menuItems': _menuItems
-          .map((entry) => {
-                'name': entry.nameController.text.trim(),
-                'description': entry.descriptionController.text.trim(),
-                'price':
-                    double.tryParse(entry.priceController.text.trim()) ?? 0.0,
-              })
-          .toList(),
-    };
+    final ownerId = context.read<UserProvider>().currentUser!.id;
+    final restaurantProvider = context.read<RestaurantProvider>();
 
-    // TODO: wire to backend — pass restaurantData to a service
-    debugPrint('Restaurant data: $restaurantData');
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Restaurant created successfully!')),
+    await restaurantProvider.createRestaurant(
+      ownerId: ownerId,
+      name: _nameController.text.trim(),
+      description: _descriptionController.text.trim(),
+      cuisine: _selectedCuisine,
+      priceLevel: _priceLevel,
+      image: _restaurantImage,
     );
-    Navigator.pop(context);
+
+    if (!mounted) return;
+
+    if (restaurantProvider.errorMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(restaurantProvider.errorMessage!)),
+      );
+      return;
+    }
+
+    final restaurantId = restaurantProvider.currentRestaurant!.id;
+    for (final entry in _menuItems) {
+      await restaurantProvider.addMenuItem(
+        restaurantId: restaurantId,
+        name: entry.nameController.text.trim(),
+        description: entry.descriptionController.text.trim(),
+        price: double.tryParse(entry.priceController.text.trim()) ?? 0.0,
+      );
+    }
+
+    if (!mounted) return;
+
+    if (restaurantProvider.errorMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(restaurantProvider.errorMessage!)),
+      );
+      return;
+    }
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const RestaurantDashboardScreen()),
+      (_) => false,
+    );
   }
 
   @override

@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../mock_data/mock_orders.dart';
 import '../../models/order.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/restaurant_provider.dart';
+import '../../screens/auth/login_screen.dart';
 import '../../theme/app_colors.dart';
 
 class RestaurantDashboardScreen extends StatefulWidget {
@@ -21,6 +25,20 @@ class _RestaurantDashboardScreenState extends State<RestaurantDashboardScreen> {
         mockRestaurantOrders.map((order) => order.status).toList();
   }
 
+  Future<void> _onSignOut() async {
+    context.read<RestaurantProvider>().clearCurrentRestaurant();
+
+    await context.read<AuthProvider>().signOut();
+
+    if (!mounted) return;
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (_) => false,
+    );
+  }
+
   void _advanceStatus(int index) {
     setState(() {
       _orderStatuses[index] = switch (_orderStatuses[index]) {
@@ -34,7 +52,15 @@ class _RestaurantDashboardScreenState extends State<RestaurantDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text(mockRestaurantName)),
+      appBar: AppBar(
+        title: const Text(mockRestaurantName),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: _onSignOut,
+          ),
+        ],
+      ),
       body: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: mockRestaurantOrders.length,
