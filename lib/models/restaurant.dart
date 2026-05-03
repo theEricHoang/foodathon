@@ -11,6 +11,8 @@ class Restaurant {
   final String cuisine;
   final int priceLevel;
   final double rating;
+  final double? latitude;
+  final double? longitude;
 
   const Restaurant({
     required this.id,
@@ -20,6 +22,8 @@ class Restaurant {
     required this.cuisine,
     required this.priceLevel,
     required this.rating,
+    this.latitude,
+    this.longitude,
   });
 
   String get priceLevelLabel => '\$' * priceLevel;
