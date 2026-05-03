@@ -1,9 +1,11 @@
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'firebase_options.dart';
 import 'providers/order_provider.dart';
+import 'models/user.dart';
 import 'providers/auth_provider.dart';
 import 'providers/user_provider.dart';
 import 'providers/restaurant_provider.dart';
@@ -13,6 +15,7 @@ import 'repositories/user_repository.dart';
 import 'repositories/restaurant_repository.dart';
 import 'repositories/runner_repository.dart';
 import 'screens/auth/login_screen.dart';
+import 'screens/customer/restaurant_discovery_screen.dart';
 import 'services/auth_service.dart';
 import 'services/firestore_service.dart';
 import 'services/storage_service.dart';
@@ -21,7 +24,9 @@ import 'theme/app_theme.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
+  await FirebaseAppCheck.instance.activate(
+    providerAndroid: AndroidDebugProvider(),
+  );
   final authService = AuthService();
   final firestoreService = FirestoreService();
   final storageService = StorageService();
@@ -29,16 +34,12 @@ void main() async {
     authService: authService,
     firestoreService: firestoreService,
   );
-  final orderRepository = OrderRepository(
-    firestoreService: firestoreService,
-  );
+  final orderRepository = OrderRepository(firestoreService: firestoreService);
   final restaurantRepository = RestaurantRepository(
     firestoreService: firestoreService,
     storageService: storageService,
   );
-  final runnerRepository = RunnerRepository(
-    firestoreService: firestoreService,
-  );
+  final runnerRepository = RunnerRepository(firestoreService: firestoreService);
 
   final userProvider = UserProvider(userRepository: userRepository);
   final authProvider = AuthProvider(
@@ -52,13 +53,11 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(
-          create: (_) => UserProvider(userRepository: userRepository),
-        ),
-        ChangeNotifierProvider(
           create: (_) => OrderProvider(orderRepository: orderRepository),
         ),
         ChangeNotifierProvider(
-          create: (_) => RestaurantProvider(restaurantRepository: restaurantRepository),
+          create: (_) =>
+              RestaurantProvider(restaurantRepository: restaurantRepository),
         ),
         ChangeNotifierProvider(
           create: (_) => RunnerProvider(runnerRepository: runnerRepository),
@@ -80,7 +79,19 @@ class MainApp extends StatelessWidget {
       title: 'Foodathon',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: const LoginScreen(),
+      home: Consumer2<AuthProvider, UserProvider>(
+        builder: (context, auth, user, _) {
+          if (auth.isLoading) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+          if (user.hasUser && user.currentUser!.role == UserRole.customer) {
+            return const RestaurantDiscoveryScreen();
+          }
+          return const LoginScreen();
+        },
+      ),
     );
   }
 }

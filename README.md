@@ -43,3 +43,19 @@ MAPS_API_KEY=your_actual_api_key
 ```
 
 > The secrets files are gitignored and will not be committed.
+
+### Firebase App Check (Android)
+
+The app uses Firebase App Check with a debug provider. Each developer needs to register their device's debug token in the Firebase Console:
+
+1. Run the app on your device or emulator
+2. In logcat, search for `FirebaseAppCheck` — look for a line like:
+   ```
+   D/FirebaseAppCheck: Enter this debug secret into the allow list in the Firebase Console for your project: <token>
+   ```
+3. Copy the token
+4. Go to the [Firebase Console](https://console.firebase.google.com/) > **App Check** > **Apps** > your Android app > three-dot menu > **Manage debug tokens**
+5. Click **Add debug token**, paste your token, and save
+6. Restart the app
+
+> Each device/emulator generates a unique token. Every team member must register their own.
