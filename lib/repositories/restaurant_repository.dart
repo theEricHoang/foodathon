@@ -41,11 +41,13 @@ class RestaurantRepository {
   }
 
   Future<Restaurant> createRestaurant({
-    required String ownerId, 
-    required String name, 
-    required String description, 
-    required String cuisine, 
-    required int priceLevel, 
+    required String ownerId,
+    required String name,
+    required String description,
+    required String cuisine,
+    required int priceLevel,
+    double? latitude,
+    double? longitude,
     File? image}
     ) async {
       final restaurantId = Uuid().v4();
@@ -57,11 +59,13 @@ class RestaurantRepository {
         cuisine: cuisine,
         priceLevel: priceLevel,
         rating: 0.0,
+        latitude: latitude,
+        longitude: longitude,
       );
       await _firestoreService.setDocument(_restaurantsCollection, restaurantId, restaurant.toJson());
       if (image != null) {
         await _storageService.uploadFile(
-          'restaurants/$restaurantId/photo.jpg', 
+          'restaurants/$restaurantId/photo.jpg',
           image,
         );
       }

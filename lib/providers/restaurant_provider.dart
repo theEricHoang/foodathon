@@ -28,11 +28,13 @@ class RestaurantProvider extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
 
   Future<void> createRestaurant({
-    required String ownerId, 
-    required String name, 
-    required String description, 
-    required String cuisine, 
-    required int priceLevel, 
+    required String ownerId,
+    required String name,
+    required String description,
+    required String cuisine,
+    required int priceLevel,
+    double? latitude,
+    double? longitude,
     File? image
   }) async {
     _isLoading = true;
@@ -45,6 +47,8 @@ class RestaurantProvider extends ChangeNotifier {
         description: description,
         cuisine: cuisine,
         priceLevel: priceLevel,
+        latitude: latitude,
+        longitude: longitude,
         image: image,
       );
       _currentRestaurant = restaurant;
@@ -53,7 +57,7 @@ class RestaurantProvider extends ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
-    } 
+    }
   }
 
   Future<void> fetchRestaurants() async {

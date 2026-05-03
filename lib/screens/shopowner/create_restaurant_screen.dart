@@ -8,6 +8,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../providers/restaurant_provider.dart';
 import '../../providers/user_provider.dart';
+import '../../services/location_service.dart';
 import '../../theme/app_colors.dart';
 import 'restaurant_dashboard_screen.dart';
 
@@ -31,6 +32,8 @@ class _CreateRestaurantScreenState extends State<CreateRestaurantScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _latitudeController = TextEditingController();
+  final _longitudeController = TextEditingController();
   final _picker = ImagePicker();
 
   String _selectedCuisine = _cuisines.first;
@@ -42,6 +45,8 @@ class _CreateRestaurantScreenState extends State<CreateRestaurantScreen> {
   void dispose() {
     _nameController.dispose();
     _descriptionController.dispose();
+    _latitudeController.dispose();
+    _longitudeController.dispose();
     for (final entry in _menuItems) {
       entry.dispose();
     }
@@ -58,6 +63,25 @@ class _CreateRestaurantScreenState extends State<CreateRestaurantScreen> {
     if (picked != null) {
       setState(() {
         _restaurantImage = File(picked.path);
+      });
+    }
+  }
+
+  Future<void> _useMyLocation() async {
+    final locationService = LocationService();
+    final granted = await locationService.requestPermission();
+    if (!granted) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Location permission denied')),
+      );
+      return;
+    }
+    final position = await locationService.getCurrentPosition();
+    if (position != null) {
+      setState(() {
+        _latitudeController.text = position.latitude.toStringAsFixed(6);
+        _longitudeController.text = position.longitude.toStringAsFixed(6);
       });
     }
   }
@@ -97,6 +121,8 @@ class _CreateRestaurantScreenState extends State<CreateRestaurantScreen> {
       description: _descriptionController.text.trim(),
       cuisine: _selectedCuisine,
       priceLevel: _priceLevel,
+      latitude: double.tryParse(_latitudeController.text.trim()),
+      longitude: double.tryParse(_longitudeController.text.trim()),
       image: _restaurantImage,
     );
 
@@ -216,6 +242,65 @@ class _CreateRestaurantScreenState extends State<CreateRestaurantScreen> {
                 onSelectionChanged: (selected) {
                   setState(() => _priceLevel = selected.first);
                 },
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Text(
+                    'Location',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  const Spacer(),
+                  TextButton.icon(
+                    onPressed: _useMyLocation,
+                    icon: const Icon(Icons.my_location),
+                    label: const Text('Use My Location'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _latitudeController,
+                      decoration: const InputDecoration(
+                        labelText: 'Latitude',
+                        prefixIcon: Icon(Icons.location_on),
+                      ),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                        signed: true,
+                      ),
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(
+                          RegExp(r'^-?\d*\.?\d*'),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _longitudeController,
+                      decoration: const InputDecoration(
+                        labelText: 'Longitude',
+                        prefixIcon: Icon(Icons.location_on),
+                      ),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                        signed: true,
+                      ),
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(
+                          RegExp(r'^-?\d*\.?\d*'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 24),
               Row(
