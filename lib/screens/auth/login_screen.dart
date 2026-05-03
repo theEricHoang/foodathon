@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../models/user.dart';
 import '../../providers/auth_provider.dart';
-import '../../screens/customer/restaurant_discovery_screen.dart';
+import '../../providers/runner_provider.dart';
+import '../../providers/user_provider.dart';
 import '../../theme/app_colors.dart';
+import '../../utils/role_routing.dart';
 import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -43,15 +46,25 @@ class _LoginScreenState extends State<LoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(authProvider.errorMessage!)),
       );
-    } else {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const RestaurantDiscoveryScreen(),
-        ),
-        (_) => false,
-      );
+      return;
     }
+
+    final user = context.read<UserProvider>().currentUser!;
+    final role = user.role;
+
+    if (role == UserRole.runner) {
+      await context.read<RunnerProvider>().fetchRunnerByUserId(user.id);
+    }
+
+    if (!mounted) return;
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+        builder: (_) => homeScreenForRole(role),
+      ),
+      (_) => false,
+    );
   }
 
   @override

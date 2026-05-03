@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/user.dart';
 import '../../providers/auth_provider.dart';
-import '../../screens/customer/restaurant_discovery_screen.dart';
+import '../../providers/runner_provider.dart';
+import '../../providers/user_provider.dart';
 import '../../theme/app_colors.dart';
+import '../../utils/role_routing.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -51,22 +53,23 @@ class _SignupScreenState extends State<SignupScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(authProvider.errorMessage!)),
       );
-    } else if (_selectedRole == UserRole.customer) {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const RestaurantDiscoveryScreen(),
-        ),
-        (_) => false,
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('This role is coming soon!'),
-        ),
-      );
-      Navigator.pop(context);
+      return;
     }
+
+    if (_selectedRole == UserRole.runner) {
+      final userId = context.read<UserProvider>().currentUser!.id;
+      await context.read<RunnerProvider>().createRunner(userId: userId);
+    }
+
+    if (!mounted) return;
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+        builder: (_) => homeScreenForRole(_selectedRole),
+      ),
+      (_) => false,
+    );
   }
 
   @override

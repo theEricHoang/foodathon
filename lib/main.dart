@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 
 import 'firebase_options.dart';
 import 'providers/order_provider.dart';
-import 'models/user.dart';
 import 'providers/auth_provider.dart';
 import 'providers/user_provider.dart';
 import 'providers/restaurant_provider.dart';
@@ -15,11 +14,11 @@ import 'repositories/user_repository.dart';
 import 'repositories/restaurant_repository.dart';
 import 'repositories/runner_repository.dart';
 import 'screens/auth/login_screen.dart';
-import 'screens/customer/restaurant_discovery_screen.dart';
 import 'services/auth_service.dart';
 import 'services/firestore_service.dart';
 import 'services/storage_service.dart';
 import 'theme/app_theme.dart';
+import 'utils/role_routing.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -86,8 +85,8 @@ class MainApp extends StatelessWidget {
               body: Center(child: CircularProgressIndicator()),
             );
           }
-          if (user.hasUser && user.currentUser!.role == UserRole.customer) {
-            return const RestaurantDiscoveryScreen();
+          if (user.hasUser) {
+            return homeScreenForRole(user.currentUser!.role);
           }
           return const LoginScreen();
         },
