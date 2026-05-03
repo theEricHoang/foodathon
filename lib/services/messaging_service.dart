@@ -47,8 +47,12 @@ class MessagingService {
       _handleMessageNavigation(initialMessage);
     }
 
-    final token = await messaging.getToken();
-    debugPrint('FCM token: $token');
+    try {
+      final token = await messaging.getToken();
+      debugPrint('FCM token: $token');
+    } catch (e) {
+      debugPrint('FCM token retrieval failed (is a Google account signed in on the device?): $e');
+    }
   }
 
   void _showLocalNotification(RemoteMessage message) {
@@ -92,8 +96,13 @@ class MessagingService {
     // The navigator key is available at _navigatorKey for future deep linking.
   }
 
-  Future<String?> getToken() {
-    return messaging.getToken();
+  Future<String?> getToken() async {
+    try {
+      return await messaging.getToken();
+    } catch (e) {
+      debugPrint('FCM getToken failed: $e');
+      return null;
+    }
   }
 
   void onTokenRefresh(void Function(String token) callback) {
