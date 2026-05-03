@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/restaurant_provider.dart';
 import '../../providers/runner_provider.dart';
 import '../../providers/user_provider.dart';
 import '../../screens/auth/login_screen.dart';
+import '../../services/order_scoring_service.dart';
 import '../../theme/app_colors.dart';
 import '../../providers/order_provider.dart';
 import '../../models/order.dart';
@@ -23,6 +25,7 @@ class _RunnerDashboardScreenState extends State<RunnerDashboardScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadRunnerProfile();
       context.read<OrderProvider>().streamAvailableOrders();
+      context.read<RestaurantProvider>().fetchRestaurants();
     });
   }
 
@@ -58,25 +61,33 @@ class _RunnerDashboardScreenState extends State<RunnerDashboardScreen> {
     );
   }
 
-  Future<void> _acceptOrder(Order order) async {
+  Future<void> _acceptOrder(Order order, {double? distanceMi}) async {
     final runnerProvider = context.read<RunnerProvider>();
     final orderProvider = context.read<OrderProvider>();
     final runnerId = runnerProvider.currentRunner?.id;
     if (runnerId == null) return;
 
-    await orderProvider.assignRunner(
-      orderId: order.id,
-      runnerId: runnerId,
-    );
+    try {
+      await orderProvider.assignRunner(
+        orderId: order.id,
+        runnerId: runnerId,
+        distanceToRestaurant: distanceMi,
+      );
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ActiveRunScreen(orderId: order.id),
-      ),
-    );
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ActiveRunScreen(orderId: order.id),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Order already taken by another runner')),
+      );
+    }
   }
 
   @override
@@ -107,8 +118,8 @@ class _RunnerDashboardScreenState extends State<RunnerDashboardScreen> {
             ),
           ),
           Expanded(
-            child: Consumer<OrderProvider>(
-              builder: (context, orderProvider, _) {
+            child: Consumer3<OrderProvider, RunnerProvider, RestaurantProvider>(
+              builder: (context, orderProvider, runnerProvider, restaurantProvider, _) {
                 final availableOrders = orderProvider.orders;
                 if (availableOrders.isEmpty) {
                   return Center(
@@ -120,11 +131,47 @@ class _RunnerDashboardScreenState extends State<RunnerDashboardScreen> {
                     ),
                   );
                 }
+
+                final runner = runnerProvider.currentRunner;
+                final hasLocation = runner?.latitude != null && runner?.longitude != null;
+
+                if (hasLocation) {
+                  final restaurantLocations = <String, ({double lat, double lng})>{};
+                  for (final r in restaurantProvider.restaurants) {
+                    if (r.latitude != null && r.longitude != null) {
+                      restaurantLocations[r.id] = (lat: r.latitude!, lng: r.longitude!);
+                    }
+                  }
+
+                  final scoredOrders = OrderScoringService().rankOrders(
+                    orders: availableOrders,
+                    runnerLat: runner!.latitude!,
+                    runnerLng: runner.longitude!,
+                    restaurantLocations: restaurantLocations,
+                  );
+
+                  return ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: scoredOrders.length,
+                    itemBuilder: (context, index) {
+                      final scored = scoredOrders[index];
+                      return _RunnerOrderCard(
+                        order: scored.order,
+                        distanceMi: scored.distanceMi,
+                        onAccept: () => _acceptOrder(scored.order, distanceMi: scored.distanceMi),
+                      );
+                    },
+                  );
+                }
+
+                final sortedOrders = List<Order>.from(availableOrders)
+                  ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+
                 return ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: availableOrders.length,
+                  itemCount: sortedOrders.length,
                   itemBuilder: (context, index) {
-                    final order = availableOrders[index];
+                    final order = sortedOrders[index];
                     return _RunnerOrderCard(
                       order: order,
                       onAccept: () => _acceptOrder(order),
@@ -142,10 +189,12 @@ class _RunnerDashboardScreenState extends State<RunnerDashboardScreen> {
 
 class _RunnerOrderCard extends StatelessWidget {
   final Order order;
+  final double? distanceMi;
   final VoidCallback onAccept;
 
   const _RunnerOrderCard({
     required this.order,
+    this.distanceMi,
     required this.onAccept,
   });
 
@@ -174,7 +223,7 @@ class _RunnerOrderCard extends StatelessWidget {
                 const Icon(Icons.directions_walk, size: 18, color: AppColors.blueSlate),
                 const SizedBox(width: 6),
                 Text(
-                  '${order.distanceToRestaurant ?? 0} mi to restaurant',
+                  '${(distanceMi ?? order.distanceToRestaurant ?? 0).toStringAsFixed(1)} mi to restaurant',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: AppColors.blueSlate,
                       ),
