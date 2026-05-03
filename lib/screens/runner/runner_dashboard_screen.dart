@@ -5,7 +5,7 @@ import '../../providers/runner_provider.dart';
 import '../../providers/user_provider.dart';
 import '../../screens/auth/login_screen.dart';
 import '../../theme/app_colors.dart';
-import '../../mock_data/mock_orders.dart';
+import '../../providers/order_provider.dart';
 import '../../models/order.dart';
 import 'active_run_screen.dart';
 
@@ -17,13 +17,13 @@ class RunnerDashboardScreen extends StatefulWidget {
 }
 
 class _RunnerDashboardScreenState extends State<RunnerDashboardScreen> {
-  late List<Order> _availableOrders;
-
   @override
   void initState() {
     super.initState();
-    _availableOrders = List.of(mockOrders);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadRunnerProfile());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadRunnerProfile();
+      context.read<OrderProvider>().streamAvailableOrders();
+    });
   }
 
   Future<void> _loadRunnerProfile() async {
@@ -32,6 +32,9 @@ class _RunnerDashboardScreenState extends State<RunnerDashboardScreen> {
     await runnerProvider.fetchRunnerByUserId(userId);
     if (runnerProvider.currentRunner == null && runnerProvider.errorMessage == null) {
       await runnerProvider.createRunner(userId: userId);
+    }
+    if (runnerProvider.currentRunner != null) {
+      await runnerProvider.goOnline();
     }
   }
 
@@ -55,15 +58,23 @@ class _RunnerDashboardScreenState extends State<RunnerDashboardScreen> {
     );
   }
 
-  void _acceptOrder(int index) {
-    final order = _availableOrders[index];
-    setState(() {
-      _availableOrders.removeAt(index);
-    });
+  Future<void> _acceptOrder(Order order) async {
+    final runnerProvider = context.read<RunnerProvider>();
+    final orderProvider = context.read<OrderProvider>();
+    final runnerId = runnerProvider.currentRunner?.id;
+    if (runnerId == null) return;
+
+    await orderProvider.assignRunner(
+      orderId: order.id,
+      runnerId: runnerId,
+    );
+
+    if (!mounted) return;
+
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => ActiveRunScreen(order: order),
+        builder: (_) => ActiveRunScreen(orderId: order.id),
       ),
     );
   }
@@ -96,25 +107,32 @@ class _RunnerDashboardScreenState extends State<RunnerDashboardScreen> {
             ),
           ),
           Expanded(
-            child: _availableOrders.isEmpty
-                ? Center(
+            child: Consumer<OrderProvider>(
+              builder: (context, orderProvider, _) {
+                final availableOrders = orderProvider.orders;
+                if (availableOrders.isEmpty) {
+                  return Center(
                     child: Text(
                       'No available orders',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                             color: AppColors.blueSlate,
                           ),
                     ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: _availableOrders.length,
-                    itemBuilder: (context, index) {
-                      return _RunnerOrderCard(
-                        order: _availableOrders[index],
-                        onAccept: () => _acceptOrder(index),
-                      );
-                    },
-                  ),
+                  );
+                }
+                return ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: availableOrders.length,
+                  itemBuilder: (context, index) {
+                    final order = availableOrders[index];
+                    return _RunnerOrderCard(
+                      order: order,
+                      onAccept: () => _acceptOrder(order),
+                    );
+                  },
+                );
+              },
+            ),
           ),
         ],
       ),
