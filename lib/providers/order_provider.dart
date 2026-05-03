@@ -5,9 +5,11 @@ import 'package:flutter/foundation.dart';
 import '../models/order.dart';
 import '../models/order_item.dart';
 import '../repositories/order_repository.dart';
+import '../services/notification_service.dart';
 
 class OrderProvider extends ChangeNotifier {
   final OrderRepository _orderRepository;
+  final NotificationService _notificationService;
 
   Order? _currentOrder;
   List<Order> _orders = [];
@@ -16,8 +18,11 @@ class OrderProvider extends ChangeNotifier {
   StreamSubscription<Order?>? _orderSubscription;
   StreamSubscription<List<Order>>? _ordersSubscription;
 
-  OrderProvider({required OrderRepository orderRepository})
-      : _orderRepository = orderRepository;
+  OrderProvider({
+    required OrderRepository orderRepository,
+    required NotificationService notificationService,
+  })  : _orderRepository = orderRepository,
+        _notificationService = notificationService;
 
   Order? get currentOrder => _currentOrder;
   List<Order> get orders => _orders;
@@ -47,6 +52,13 @@ class OrderProvider extends ChangeNotifier {
       );
       _currentOrder = order;
       _listenToOrder(order.id);
+
+      _notificationService.notifyRestaurantOwner(
+        restaurantId: restaurantId,
+        title: 'New Order!',
+        body: 'New order from $customerName!',
+        data: {'type': 'order_status_update', 'orderId': order.id},
+      );
     } catch (e) {
       _errorMessage = e.toString();
     } finally {
@@ -87,11 +99,53 @@ class OrderProvider extends ChangeNotifier {
         orderId: orderId,
         status: status,
       );
+
+      final order = _currentOrder;
+      if (order != null) {
+        _sendStatusNotification(order, status);
+      }
     } catch (e) {
       _errorMessage = e.toString();
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  void _sendStatusNotification(Order order, OrderStatus status) {
+    final data = {'type': 'order_status_update', 'orderId': order.id};
+
+    switch (status) {
+      case OrderStatus.confirmed:
+        _notificationService.notifyCustomer(
+          customerId: order.customerId,
+          title: 'Order Confirmed',
+          body: 'Your order has been confirmed!',
+          data: data,
+        );
+      case OrderStatus.readyForPickup:
+        _notificationService.notifyCustomer(
+          customerId: order.customerId,
+          title: 'Ready for Pickup',
+          body: 'Your order is ready for pickup!',
+          data: data,
+        );
+      case OrderStatus.headedToYou:
+        _notificationService.notifyCustomer(
+          customerId: order.customerId,
+          title: 'On Its Way!',
+          body: 'Your order is on its way!',
+          data: data,
+        );
+      case OrderStatus.arrived:
+        _notificationService.notifyCustomer(
+          customerId: order.customerId,
+          title: 'Order Arrived',
+          body: 'Your order has arrived!',
+          data: data,
+        );
+      case OrderStatus.sent:
+        break;
     }
   }
 
@@ -118,6 +172,13 @@ class OrderProvider extends ChangeNotifier {
       _currentOrder = updatedOrder;
       if (updatedOrder != null) {
         _listenToOrder(orderId);
+
+        _notificationService.notifyCustomer(
+          customerId: updatedOrder.customerId,
+          title: 'Runner Assigned',
+          body: 'A runner is heading to pick up your order!',
+          data: {'type': 'order_status_update', 'orderId': orderId},
+        );
       }
     } catch (e) {
       _errorMessage = e.toString();

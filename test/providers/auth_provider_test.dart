@@ -4,10 +4,11 @@ import 'package:foodathon/models/user.dart';
 import 'package:foodathon/providers/auth_provider.dart';
 import 'package:foodathon/providers/user_provider.dart';
 import 'package:foodathon/repositories/user_repository.dart';
+import 'package:foodathon/services/messaging_service.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 
-@GenerateMocks([UserRepository, UserProvider])
+@GenerateMocks([UserRepository, UserProvider, MessagingService])
 import 'auth_provider_test.mocks.dart';
 
 class MockFirebaseUser extends Mock implements User {
@@ -35,14 +36,18 @@ UserModel _testUser({
 void main() {
   late MockUserRepository mockRepo;
   late MockUserProvider mockUserProvider;
+  late MockMessagingService mockMessagingService;
   late AuthProvider provider;
 
   setUp(() {
     mockRepo = MockUserRepository();
     mockUserProvider = MockUserProvider();
+    mockMessagingService = MockMessagingService();
+    when(mockMessagingService.getToken()).thenAnswer((_) async => 'test-token');
     provider = AuthProvider(
       userRepository: mockRepo,
       userProvider: mockUserProvider,
+      messagingService: mockMessagingService,
     );
   });
 
@@ -121,16 +126,23 @@ void main() {
 
   group('signOut', () {
     test('success calls clearUser', () async {
+      final firebaseUser = MockFirebaseUser('uid1');
+      when(mockRepo.currentUser).thenReturn(firebaseUser);
+      when(mockRepo.deleteFcmToken('uid1')).thenAnswer((_) async {});
       when(mockRepo.signOut()).thenAnswer((_) async {});
 
       await provider.signOut();
 
+      verify(mockRepo.deleteFcmToken('uid1')).called(1);
       verify(mockUserProvider.clearUser()).called(1);
       expect(provider.isLoading, isFalse);
       expect(provider.errorMessage, isNull);
     });
 
     test('failure sets errorMessage and does not call clearUser', () async {
+      final firebaseUser = MockFirebaseUser('uid1');
+      when(mockRepo.currentUser).thenReturn(firebaseUser);
+      when(mockRepo.deleteFcmToken('uid1')).thenAnswer((_) async {});
       when(mockRepo.signOut()).thenThrow(Exception('Sign out failed'));
 
       await provider.signOut();

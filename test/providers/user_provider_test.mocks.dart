@@ -137,4 +137,22 @@ class MockUserRepository extends _i1.Mock implements _i3.UserRepository {
             returnValue: _i4.Stream<_i2.UserModel?>.empty(),
           )
           as _i4.Stream<_i2.UserModel?>);
+
+  @override
+  _i4.Future<void> saveFcmToken(String? uid, String? token) =>
+      (super.noSuchMethod(
+            Invocation.method(#saveFcmToken, [uid, token]),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
+          )
+          as _i4.Future<void>);
+
+  @override
+  _i4.Future<void> deleteFcmToken(String? uid) =>
+      (super.noSuchMethod(
+            Invocation.method(#deleteFcmToken, [uid]),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
+          )
+          as _i4.Future<void>);
 }

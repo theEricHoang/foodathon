@@ -5,10 +5,11 @@ import 'package:foodathon/models/order.dart';
 import 'package:foodathon/models/order_item.dart';
 import 'package:foodathon/providers/order_provider.dart';
 import 'package:foodathon/repositories/order_repository.dart';
+import 'package:foodathon/services/notification_service.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 
-@GenerateMocks([OrderRepository])
+@GenerateMocks([OrderRepository, NotificationService])
 import 'order_provider_test.mocks.dart';
 
 Order _testOrder({
@@ -38,16 +39,21 @@ Order _testOrder({
 
 void main() {
   late MockOrderRepository mockRepo;
+  late MockNotificationService mockNotificationService;
   late OrderProvider provider;
 
   setUp(() {
     mockRepo = MockOrderRepository();
+    mockNotificationService = MockNotificationService();
     when(mockRepo.streamOrder(any)).thenAnswer((_) => const Stream.empty());
     when(mockRepo.streamCustomerOrders(any))
         .thenAnswer((_) => const Stream.empty());
     when(mockRepo.streamRestaurantOrders(any))
         .thenAnswer((_) => const Stream.empty());
-    provider = OrderProvider(orderRepository: mockRepo);
+    provider = OrderProvider(
+      orderRepository: mockRepo,
+      notificationService: mockNotificationService,
+    );
   });
 
   tearDown(() {
@@ -386,7 +392,10 @@ void main() {
     when(mockRepo.streamCustomerOrders('customer1'))
         .thenAnswer((_) => ordersController.stream);
 
-    final localProvider = OrderProvider(orderRepository: mockRepo);
+    final localProvider = OrderProvider(
+      orderRepository: mockRepo,
+      notificationService: mockNotificationService,
+    );
     await localProvider.fetchOrder('order1');
     localProvider.streamCustomerOrders('customer1');
 

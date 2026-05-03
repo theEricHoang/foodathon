@@ -8,6 +8,7 @@ import 'dart:async' as _i4;
 import 'package:foodathon/models/order.dart' as _i2;
 import 'package:foodathon/models/order_item.dart' as _i5;
 import 'package:foodathon/repositories/order_repository.dart' as _i3;
+import 'package:foodathon/services/notification_service.dart' as _i6;
 import 'package:mockito/mockito.dart' as _i1;
 
 // ignore_for_file: type=lint
@@ -164,4 +165,71 @@ class MockOrderRepository extends _i1.Mock implements _i3.OrderRepository {
             returnValue: _i4.Future<List<_i2.Order>>.value(<_i2.Order>[]),
           )
           as _i4.Future<List<_i2.Order>>);
+}
+
+/// A class which mocks [NotificationService].
+///
+/// See the documentation for Mockito's code generation for more information.
+class MockNotificationService extends _i1.Mock
+    implements _i6.NotificationService {
+  MockNotificationService() {
+    _i1.throwOnMissingStub(this);
+  }
+
+  @override
+  _i4.Future<void> sendNotification({
+    required String? fcmToken,
+    required String? title,
+    required String? body,
+    Map<String, String>? data,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#sendNotification, [], {
+              #fcmToken: fcmToken,
+              #title: title,
+              #body: body,
+              #data: data,
+            }),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
+          )
+          as _i4.Future<void>);
+
+  @override
+  _i4.Future<void> notifyCustomer({
+    required String? customerId,
+    required String? title,
+    required String? body,
+    Map<String, String>? data,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#notifyCustomer, [], {
+              #customerId: customerId,
+              #title: title,
+              #body: body,
+              #data: data,
+            }),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
+          )
+          as _i4.Future<void>);
+
+  @override
+  _i4.Future<void> notifyRestaurantOwner({
+    required String? restaurantId,
+    required String? title,
+    required String? body,
+    Map<String, String>? data,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#notifyRestaurantOwner, [], {
+              #restaurantId: restaurantId,
+              #title: title,
+              #body: body,
+              #data: data,
+            }),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
+          )
+          as _i4.Future<void>);
 }

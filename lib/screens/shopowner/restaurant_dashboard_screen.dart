@@ -4,6 +4,7 @@ import '../../models/order.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../providers/restaurant_provider.dart';
+import '../../providers/user_provider.dart';
 import '../../screens/auth/login_screen.dart';
 import '../../theme/app_colors.dart';
 
@@ -19,8 +20,22 @@ class _RestaurantDashboardScreenState extends State<RestaurantDashboardScreen> {
   @override
   void initState() {
     super.initState();
-    final restaurant = context.read<RestaurantProvider>().currentRestaurant;
-    if (restaurant != null) {
+    _loadRestaurantAndOrders();
+  }
+
+  Future<void> _loadRestaurantAndOrders() async {
+    final restaurantProvider = context.read<RestaurantProvider>();
+    var restaurant = restaurantProvider.currentRestaurant;
+
+    if (restaurant == null) {
+      final user = context.read<UserProvider>().currentUser;
+      if (user != null) {
+        await restaurantProvider.fetchRestaurantByOwnerId(user.id);
+        restaurant = restaurantProvider.currentRestaurant;
+      }
+    }
+
+    if (restaurant != null && mounted) {
       context.read<OrderProvider>().streamRestaurantOrders(restaurant.id);
     }
   }

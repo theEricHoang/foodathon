@@ -86,5 +86,17 @@ class UserRepository {
     );
   }
 
+  Future<void> saveFcmToken(String uid, String token) {
+    return _firestoreService.updateDocument(_collection, uid, {
+      'fcmToken': token,
+    });
+  }
+
+  Future<void> deleteFcmToken(String uid) {
+    return _firestoreService.updateDocument(_collection, uid, {
+      'fcmToken': null,
+    });
+  }
+
   User? get currentUser => _authService.currentUser;
 }

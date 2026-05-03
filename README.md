@@ -44,6 +44,26 @@ MAPS_API_KEY=your_actual_api_key
 
 > The secrets files are gitignored and will not be committed.
 
+### Push Notifications (Firebase Service Account)
+
+Push notifications are sent via the FCM HTTP v1 API using a Firebase service account. Each developer needs a local copy of the credentials:
+
+1. Go to the [Firebase Console](https://console.firebase.google.com/) > **Project Settings** > **Service accounts**
+2. Click **Generate new private key** and download the JSON file
+3. Copy the example config and fill in your values:
+
+```sh
+cp lib/config/service_account.dart.example lib/config/service_account.dart
+```
+
+4. Open `lib/config/service_account.dart` and replace the placeholder values with the matching fields from your downloaded JSON:
+   - `private_key_id`
+   - `private_key` (the full RSA key string)
+   - `client_email`
+   - `client_id`
+
+> This file is gitignored. Never commit your actual service account credentials.
+
 ### Firebase App Check (Android)
 
 The app uses Firebase App Check with a debug provider. Each developer needs to register their device's debug token in the Firebase Console:
