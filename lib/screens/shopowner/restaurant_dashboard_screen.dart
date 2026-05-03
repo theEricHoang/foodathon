@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../mock_data/mock_orders.dart';
 import '../../models/order.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/order_provider.dart';
 import '../../providers/restaurant_provider.dart';
 import '../../screens/auth/login_screen.dart';
 import '../../theme/app_colors.dart';
@@ -16,16 +16,17 @@ class RestaurantDashboardScreen extends StatefulWidget {
 }
 
 class _RestaurantDashboardScreenState extends State<RestaurantDashboardScreen> {
-  late List<OrderStatus> _orderStatuses;
-
   @override
   void initState() {
     super.initState();
-    _orderStatuses =
-        mockRestaurantOrders.map((order) => order.status).toList();
+    final restaurant = context.read<RestaurantProvider>().currentRestaurant;
+    if (restaurant != null) {
+      context.read<OrderProvider>().streamRestaurantOrders(restaurant.id);
+    }
   }
 
   Future<void> _onSignOut() async {
+    context.read<OrderProvider>().clearOrders();
     context.read<RestaurantProvider>().clearCurrentRestaurant();
 
     await context.read<AuthProvider>().signOut();
@@ -39,21 +40,40 @@ class _RestaurantDashboardScreenState extends State<RestaurantDashboardScreen> {
     );
   }
 
-  void _advanceStatus(int index) {
-    setState(() {
-      _orderStatuses[index] = switch (_orderStatuses[index]) {
-        OrderStatus.sent => OrderStatus.confirmed,
-        OrderStatus.confirmed => OrderStatus.readyForPickup,
-        _ => _orderStatuses[index],
-      };
-    });
+  Future<void> _advanceStatus(Order order) async {
+    final nextStatus = switch (order.status) {
+      OrderStatus.sent => OrderStatus.confirmed,
+      OrderStatus.confirmed => OrderStatus.readyForPickup,
+      _ => null,
+    };
+
+    if (nextStatus == null) return;
+
+    await context.read<OrderProvider>().updateOrderStatus(
+          orderId: order.id,
+          status: nextStatus,
+        );
+
+    if (!mounted) return;
+
+    final error = context.read<OrderProvider>().errorMessage;
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error)),
+      );
+      context.read<OrderProvider>().clearError();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final restaurant = context.watch<RestaurantProvider>().currentRestaurant;
+    final orderProvider = context.watch<OrderProvider>();
+    final orders = orderProvider.orders;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text(mockRestaurantName),
+        title: Text(restaurant?.name ?? 'Dashboard'),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -61,21 +81,25 @@ class _RestaurantDashboardScreenState extends State<RestaurantDashboardScreen> {
           ),
         ],
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: mockRestaurantOrders.length,
-        itemBuilder: (context, index) {
-          final order = mockRestaurantOrders[index];
-          final status = _orderStatuses[index];
-          return _OrderCard(
-            order: order,
-            status: status,
-            onAction: _buttonLabel(status) != null
-                ? () => _advanceStatus(index)
-                : null,
-          );
-        },
-      ),
+      body: orderProvider.isLoading && orders.isEmpty
+          ? const Center(child: CircularProgressIndicator())
+          : orders.isEmpty
+              ? const Center(
+                  child: Text('No orders yet.'),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: orders.length,
+                  itemBuilder: (context, index) {
+                    final order = orders[index];
+                    return _OrderCard(
+                      order: order,
+                      onAction: _buttonLabel(order.status) != null
+                          ? () => _advanceStatus(order)
+                          : null,
+                    );
+                  },
+                ),
     );
   }
 
@@ -88,23 +112,21 @@ class _RestaurantDashboardScreenState extends State<RestaurantDashboardScreen> {
 
 class _OrderCard extends StatelessWidget {
   final Order order;
-  final OrderStatus status;
   final VoidCallback? onAction;
 
   const _OrderCard({
     required this.order,
-    required this.status,
     required this.onAction,
   });
 
-  Color get _statusBarColor => switch (status) {
+  Color get _statusBarColor => switch (order.status) {
         OrderStatus.sent => AppColors.error,
         OrderStatus.confirmed => Colors.amber,
         OrderStatus.readyForPickup => Colors.green,
         _ => AppColors.silver,
       };
 
-  String? get _buttonLabel => switch (status) {
+  String? get _buttonLabel => switch (order.status) {
         OrderStatus.sent => 'Confirm',
         OrderStatus.confirmed => 'Mark Ready',
         _ => null,
